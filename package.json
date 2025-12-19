@@ -17,7 +17,7 @@
     "build": "bun run build:shared && bun run build:tools && bun run build:web",
     "build:shared": "bun run --cwd shared build",
     "build:tools": "bun run --filter '@libreutils/tool-*' build",
-    "build:web": "bun build ./src/index.ts --outdir ./dist --target browser --minify && cp ./src/index.html ./dist/ && cp -r ./public/* ./dist/",
+    "build:web": "bun build ./src/index.ts --outdir ./dist --target browser --minify && cp ./src/index.html ./dist/ && cp -r ./public/* ./dist/ && cat ./shared/src/styles/variables.css ./shared/src/styles/base.css ./shared/src/styles/components.css > ./dist/styles.css",
     "clean": "rm -rf node_modules shared/node_modules tools/*/node_modules dist shared/dist tools/*/dist",
     "test": "bun test",
     "test:unit": "bun test --filter '*.test.ts'",
