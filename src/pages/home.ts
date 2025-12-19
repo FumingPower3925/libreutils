@@ -17,6 +17,7 @@ const tools: ToolMeta[] = [
     name: 'Password Generator',
     description: 'Generate secure, cryptographically random passwords with customizable length and character options.',
     category: 'encryption',
+    icon: 'PW',
     keywords: ['password', 'generator', 'secure', 'random', 'strong', 'crypto'],
   },
 ];

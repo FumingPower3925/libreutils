@@ -99,9 +99,7 @@ export class PasswordGenerator {
             throw new Error('No characters available after exclusions');
         }
 
-        // Array not needed here as we generate per char inside loop using getUnbiasedRandomInt
-        // but for performance refactoring we might want batched generation later.
-        // For now, adhering to strict unbiased generation per char.
+
 
         let password = '';
         for (let i = 0; i < options.length; i++) {
@@ -150,20 +148,24 @@ export class PasswordGenerator {
 
             const hasType = chars.some(c => filtered.includes(c));
             if (!hasType) {
-                let pos: number;
-                let attempts = 0;
-                // Prevent infinite loop if we can't find a spot after many tries
-                const maxAttempts = password.length * 3;
-
-                do {
-                    pos = getRandomPosition();
-                    attempts++;
-                } while (positions.has(pos) && attempts < maxAttempts);
-
-                if (attempts < maxAttempts) {
-                    positions.add(pos);
-                    chars[pos] = getRandomChar(filtered);
+                // Collect all positions that are not yet reserved, so we can pick one safely.
+                const availablePositions: number[] = [];
+                for (let i = 0; i < password.length; i++) {
+                    if (!positions.has(i)) {
+                        availablePositions.push(i);
+                    }
                 }
+
+                // If there are no available positions left, we cannot safely insert this type
+                // without overwriting previously ensured character types.
+                if (availablePositions.length === 0) {
+                    return;
+                }
+
+                const randomIndex = this.getUnbiasedRandomInt(availablePositions.length);
+                const pos = availablePositions[randomIndex];
+                positions.add(pos);
+                chars[pos] = getRandomChar(filtered);
             }
         };
 

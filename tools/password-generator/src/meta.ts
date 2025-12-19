@@ -5,6 +5,6 @@ export const meta: ToolMeta = {
     name: 'Password Generator',
     description: 'Generate secure, cryptographically random passwords with customizable length, character sets, and strength options.',
     category: 'encryption',
-    icon: '🔐',
+    icon: 'PW',
     keywords: ['password', 'generator', 'secure', 'random', 'strong', 'crypto', 'security'],
 };

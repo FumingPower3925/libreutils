@@ -465,7 +465,7 @@ function setupEventListeners(container: HTMLElement): void {
     generatePassword(); // Real-time update
   });
 
-  const optionInputs = [optUppercase, optLowercase, optNumbers, optSymbols, optAmbiguous, lengthSlider];
+  const optionInputs = [optUppercase, optLowercase, optNumbers, optSymbols, optAmbiguous];
   optionInputs.forEach(input => {
     input.addEventListener('change', generatePassword);
   });
@@ -484,6 +484,8 @@ function setupEventListeners(container: HTMLElement): void {
         textarea.value = text;
         document.body.appendChild(textarea);
         textarea.select();
+        // Intentional fallback: use deprecated execCommand('copy') for older browsers
+        // that do not support navigator.clipboard.writeText.
         document.execCommand('copy');
         document.body.removeChild(textarea);
         copyFeedback.classList.add('visible');
