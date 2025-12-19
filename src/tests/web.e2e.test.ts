@@ -86,8 +86,8 @@ describe('HTML Structure', () => {
         expect(html).toContain('<title>');
     });
 
-    test('index.html references service worker', async () => {
-        const html = await Bun.file('./src/index.html').text();
-        expect(html).toContain('serviceWorker');
+    test('app registers service worker', async () => {
+        const ts = await Bun.file('./src/index.ts').text();
+        expect(ts).toContain('serviceWorker');
     });
 });
