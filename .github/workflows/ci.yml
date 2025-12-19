@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Type check
+        run: bun run typecheck
+
+  detect-changes:
+    name: Detect Changed Tools
+    runs-on: ubuntu-latest
+    outputs:
+      tools: ${{ steps.changes.outputs.tools }}
+      has_tools: ${{ steps.changes.outputs.has_tools }}
+      web_changed: ${{ steps.changes.outputs.web_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Detect changed tools
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          
+          # Handle initial commit (before is all zeros or empty)
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            # First commit - treat all files as changed
+            CHANGED_FILES=$(git ls-files)
+          else
+            # Get changed files
+            CHANGED_FILES=$(git diff --name-only $BASE ${{ github.sha }} 2>/dev/null || echo "")
+          fi
+          
+          # Find modified tools
+          TOOLS=$(echo "$CHANGED_FILES" | grep "^tools/" | cut -d'/' -f2 | sort -u | tr '\n' ' ')
+          
+          # Check if web/shared changed
+          WEB_CHANGED=$(echo "$CHANGED_FILES" | grep -E "^(src/|shared/)" | wc -l)
+          
+          # Create JSON array of tools
+          if [ -n "$TOOLS" ]; then
+            TOOLS_JSON=$(echo $TOOLS | xargs -n1 | jq -R . | jq -s -c .)
+            echo "tools=$TOOLS_JSON" >> $GITHUB_OUTPUT
+            echo "has_tools=true" >> $GITHUB_OUTPUT
+          else
+            echo "tools=[]" >> $GITHUB_OUTPUT
+            echo "has_tools=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ "$WEB_CHANGED" -gt 0 ]; then
+            echo "web_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "web_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+  test-tools:
+    name: Test Tools
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_tools == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        tool: ${{ fromJson(needs.detect-changes.outputs.tools) }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Run unit tests for ${{ matrix.tool }}
+        run: bun test tools/${{ matrix.tool }}
+      
+      - name: Run e2e tests for ${{ matrix.tool }}
+        run: |
+          if [ -f "tools/${{ matrix.tool }}/tests/e2e.e2e.test.ts" ]; then
+            bun test tools/${{ matrix.tool }}/tests
+          fi
+
+  test-web:
+    name: Test Web App
+    needs: detect-changes
+    if: needs.detect-changes.outputs.web_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Run web e2e tests
+        run: |
+          if [ -d "src/tests" ]; then
+            bun test src/tests
+          fi
+
+  check-links:
+    name: Check Links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check for broken links in README
+        run: |
+          # Extract URLs from Markdown links [text](url) and raw URLs
+          grep -oE '\[[^]]*\]\((https?://[^)[:space:]]+)\)|(https?://[^[:space:]\)]+)' README.md \
+            | sed -E 's/.*\((https?:\/\/[^)]+)\).*/\1/' \
+            | sort -u \
+            | while read url; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$url" || echo "000")
+            if [ "$status" = "000" ] || [ "$status" -ge 400 ]; then
+              echo "Broken link: $url (status: $status)"
+              exit 1
+            fi
+          done

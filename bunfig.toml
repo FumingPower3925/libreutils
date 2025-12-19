@@ -1,0 +1,9 @@
+# Bun configuration for LibreUtils
+
+[install]
+# Use exact versions for reproducible builds
+exact = true
+
+[install.lockfile]
+# Save the lockfile
+save = true
