@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { TextEncoderTool, ENCODING_OPTIONS } from './tool';
+import { TextEncoderTool, ENCODING_OPTIONS, type EncodingType } from './tool';
 
 describe('TextEncoderTool', () => {
     describe('encode', () => {
@@ -41,7 +41,7 @@ describe('TextEncoderTool', () => {
         });
 
         test('throws on unknown encoding type', () => {
-            expect(() => TextEncoderTool.encode('test', 'unknown' as any)).toThrow();
+            expect(() => TextEncoderTool.encode('test', 'unknown' as unknown as EncodingType)).toThrow();
         });
     });
 
@@ -80,7 +80,7 @@ describe('TextEncoderTool', () => {
         });
 
         test('throws on unknown decoding type', () => {
-            expect(() => TextEncoderTool.decode('test', 'unknown' as any)).toThrow();
+            expect(() => TextEncoderTool.decode('test', 'unknown' as unknown as EncodingType)).toThrow();
         });
     });
 

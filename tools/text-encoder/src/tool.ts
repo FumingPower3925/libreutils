@@ -34,7 +34,11 @@ function bytesToText(bytes: Uint8Array): string {
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
-    return btoa(String.fromCharCode(...bytes));
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
 }
 
 function base64ToBytes(base64: string): Uint8Array {
