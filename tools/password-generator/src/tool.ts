@@ -22,7 +22,6 @@ const NUMBERS = '0123456789';
 const SYMBOLS = '!@#$%^&*()_+-=[]{}|;:,.<>?';
 const AMBIGUOUS = 'Il1O0';
 
-// Word list for memorable passwords (common, easy-to-type words)
 const WORD_LIST = [
     'apple', 'arrow', 'beach', 'berry', 'bird', 'blade', 'blaze', 'bloom', 'blue', 'bolt',
     'brave', 'bread', 'brick', 'bridge', 'bright', 'brook', 'butter', 'cabin', 'cake', 'calm',
@@ -174,7 +173,6 @@ export class PasswordGenerator {
 
         for (let i = 0; i < count; i++) {
             let word = getRandomWord();
-            // Capitalize if uppercase is selected
             if (options.uppercase) {
                 word = word.charAt(0).toUpperCase() + word.slice(1);
             }
@@ -187,7 +185,6 @@ export class PasswordGenerator {
             const array = new Uint32Array(1);
             crypto.getRandomValues(array);
             const num = array[0] % 100;
-            // Prepend number to ensure it's not cut off by length limit
             password = `${num}${separator}${password}`;
         }
 
@@ -210,17 +207,14 @@ export class PasswordGenerator {
             return { score: 0, label: 'Very Weak', color: '#dc2626', entropy: 0 };
         }
 
-        // Calculate character set size
         let charsetSize = 0;
         if (/[a-z]/.test(password)) charsetSize += 26;
         if (/[A-Z]/.test(password)) charsetSize += 26;
         if (/[0-9]/.test(password)) charsetSize += 10;
         if (/[^a-zA-Z0-9]/.test(password)) charsetSize += 32;
 
-        // Calculate entropy: log2(charset^length)
         const entropy = password.length * Math.log2(charsetSize || 1);
 
-        // Score based on entropy
         let score: number;
         let label: PasswordStrength['label'];
         let color: string;

@@ -443,7 +443,6 @@ function setupEventListeners(container: HTMLElement): void {
     }
   };
 
-  // Toggle options visibility based on memorable setting
   optMemorable.addEventListener('change', () => {
     const isMemorable = optMemorable.checked;
 
