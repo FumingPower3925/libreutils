@@ -99,17 +99,25 @@ describe('PasswordGenerator', () => {
             expect(strength.label).toBe('Very Weak');
         });
 
-        test('returns Strong for long mixed password', () => {
+        test('returns Strong for 16-char mixed password', () => {
             const password = PasswordGenerator.generate({ ...DEFAULT_OPTIONS, length: 16 });
             const strength = PasswordGenerator.calculateStrength(password);
-            expect(strength.score).toBeGreaterThanOrEqual(3);
+            expect(strength.label).toBe('Strong');
+            expect(strength.score).toBe(4);
         });
 
-        test('returns Very Strong for very long password', () => {
+        test('returns Very Strong for 32-char password', () => {
             const password = PasswordGenerator.generate({ ...DEFAULT_OPTIONS, length: 32 });
             const strength = PasswordGenerator.calculateStrength(password);
             expect(strength.label).toBe('Very Strong');
             expect(strength.score).toBe(5);
+        });
+
+        test('returns Unbreakable for extremely long password (entropy > 512)', () => {
+            const password = PasswordGenerator.generate({ ...DEFAULT_OPTIONS, length: 100 });
+            const strength = PasswordGenerator.calculateStrength(password);
+            expect(strength.label).toBe('Unbreakable');
+            expect(strength.score).toBe(6);
         });
 
         test('calculates entropy correctly', () => {

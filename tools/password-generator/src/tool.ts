@@ -11,7 +11,7 @@ export interface PasswordOptions {
 
 export interface PasswordStrength {
     score: number;
-    label: 'Very Weak' | 'Weak' | 'Fair' | 'Strong' | 'Very Strong';
+    label: 'Very Weak' | 'Weak' | 'Fair' | 'Strong' | 'Very Strong' | 'Unbreakable';
     color: string;
     entropy: number;
 }
@@ -265,14 +265,18 @@ export class PasswordGenerator {
             score = 3;
             label = 'Fair';
             color = '#eab308';
-        } else if (entropy < 80) {
+        } else if (entropy < 128) {
             score = 4;
             label = 'Strong';
             color = '#22c55e';
-        } else {
+        } else if (entropy < 512) {
             score = 5;
             label = 'Very Strong';
             color = '#16a34a';
+        } else {
+            score = 6;
+            label = 'Unbreakable';
+            color = '#7c3aed';
         }
 
         return { score, label, color, entropy: Math.round(entropy) };

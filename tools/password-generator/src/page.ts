@@ -428,7 +428,7 @@ function setupEventListeners(container: HTMLElement): void {
   });
 
   const updateStrengthDisplay = (strength: PasswordStrength): void => {
-    strengthFill.style.width = `${(strength.score / 5) * 100}%`;
+    strengthFill.style.width = `${Math.min(100, (strength.score / 5) * 100)}%`;
     strengthFill.style.background = strength.color;
     strengthLabel.textContent = strength.label;
     strengthLabel.style.color = strength.color;
