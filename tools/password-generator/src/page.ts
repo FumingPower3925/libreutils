@@ -242,6 +242,12 @@ export function renderPasswordGeneratorPage(): HTMLElement {
         background: var(--lu-primary-50, #f5f3ff);
       }
 
+      @media (prefers-color-scheme: dark) {
+        .checkbox-item:hover {
+          background: var(--lu-bg-card-hover, rgba(255, 255, 255, 0.1));
+        }
+      }
+
       .checkbox-item input {
         width: 18px;
         height: 18px;
@@ -456,6 +462,7 @@ function setupEventListeners(container: HTMLElement): void {
 
   lengthSlider.addEventListener('input', () => {
     lengthValue.textContent = lengthSlider.value;
+    generatePassword(); // Real-time update
   });
 
   const optionInputs = [optUppercase, optLowercase, optNumbers, optSymbols, optAmbiguous, lengthSlider];
