@@ -125,4 +125,29 @@ describe('PasswordGenerator', () => {
             expect(uniquePasswords.size).toBe(10);
         });
     });
+
+    describe('generateMemorable', () => {
+        test('generates memorable password with words', () => {
+            const options: PasswordOptions = { ...DEFAULT_OPTIONS, memorable: true, length: 20 };
+            const password = PasswordGenerator.generate(options);
+            // Should contain words separated by something
+            expect(password).toMatch(/[a-z]+/i);
+            expect(password.length).toBeLessThanOrEqual(20);
+        });
+
+        test('respects uppercase option in memorable passwords', () => {
+            const options: PasswordOptions = { ...DEFAULT_OPTIONS, memorable: true, uppercase: true };
+            const password = PasswordGenerator.generate(options);
+            // Words should be capitalized
+            expect(password).toMatch(/[A-Z][a-z]*/);
+        });
+
+        test('includes numbers if requested', () => {
+            const options: PasswordOptions = { ...DEFAULT_OPTIONS, memorable: true, numbers: true };
+            // Generate multiple to ensure we catch the number addition
+            const passwords = PasswordGenerator.generateMultiple(5, options);
+            const hasNumbers = passwords.some(p => /\d/.test(p));
+            expect(hasNumbers).toBe(true);
+        });
+    });
 });

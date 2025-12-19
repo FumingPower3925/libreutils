@@ -5,10 +5,10 @@
 import { PasswordGenerator, DEFAULT_OPTIONS, type PasswordOptions, type PasswordStrength } from './tool';
 
 export function renderPasswordGeneratorPage(): HTMLElement {
-    const container = document.createElement('div');
-    container.className = 'password-generator-page';
+  const container = document.createElement('div');
+  container.className = 'password-generator-page';
 
-    container.innerHTML = `
+  container.innerHTML = `
     <style>
       .password-generator-page {
         max-width: 800px;
@@ -332,10 +332,22 @@ export function renderPasswordGeneratorPage(): HTMLElement {
           <span class="option-label-text">Password Length</span>
           <span class="option-value" id="length-value">16</span>
         </div>
-        <input type="range" class="length-slider" id="length-slider" min="4" max="64" value="16">
+        <input type="range" class="length-slider" id="length-slider" min="4" max="128" value="16">
       </div>
       
       <div class="option-group">
+        <div class="option-label">
+          <span class="option-label-text">Password Type</span>
+        </div>
+        <div class="checkboxes">
+           <label class="checkbox-item" style="grid-column: 1 / -1;">
+            <input type="checkbox" id="opt-memorable">
+            <span class="checkbox-label">Memorable (Words)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="option-group" id="char-options">
         <div class="option-label">
           <span class="option-label-text">Character Types</span>
         </div>
@@ -359,7 +371,7 @@ export function renderPasswordGeneratorPage(): HTMLElement {
         </div>
       </div>
       
-      <div class="option-group" style="margin-bottom: 0;">
+      <div class="option-group" style="margin-bottom: 0;" id="exclude-options">
         <div class="checkboxes">
           <label class="checkbox-item">
             <input type="checkbox" id="opt-ambiguous">
@@ -372,102 +384,122 @@ export function renderPasswordGeneratorPage(): HTMLElement {
     <div class="copy-feedback" id="copy-feedback">Copied to clipboard!</div>
   `;
 
-    setupEventListeners(container);
-    return container;
+  setupEventListeners(container);
+  return container;
 }
 
 function setupEventListeners(container: HTMLElement): void {
-    const passwordText = container.querySelector('#password-text') as HTMLSpanElement;
-    const copyBtn = container.querySelector('#copy-btn') as HTMLButtonElement;
-    const generateBtn = container.querySelector('#generate-btn') as HTMLButtonElement;
-    const lengthSlider = container.querySelector('#length-slider') as HTMLInputElement;
-    const lengthValue = container.querySelector('#length-value') as HTMLSpanElement;
-    const strengthFill = container.querySelector('#strength-fill') as HTMLDivElement;
-    const strengthLabel = container.querySelector('#strength-label') as HTMLSpanElement;
-    const strengthEntropy = container.querySelector('#strength-entropy') as HTMLSpanElement;
-    const copyFeedback = container.querySelector('#copy-feedback') as HTMLDivElement;
+  const passwordText = container.querySelector('#password-text') as HTMLSpanElement;
+  const copyBtn = container.querySelector('#copy-btn') as HTMLButtonElement;
+  const generateBtn = container.querySelector('#generate-btn') as HTMLButtonElement;
+  const lengthSlider = container.querySelector('#length-slider') as HTMLInputElement;
+  const lengthValue = container.querySelector('#length-value') as HTMLSpanElement;
+  const strengthFill = container.querySelector('#strength-fill') as HTMLDivElement;
+  const strengthLabel = container.querySelector('#strength-label') as HTMLSpanElement;
+  const strengthEntropy = container.querySelector('#strength-entropy') as HTMLSpanElement;
+  const copyFeedback = container.querySelector('#copy-feedback') as HTMLDivElement;
 
-    const optUppercase = container.querySelector('#opt-uppercase') as HTMLInputElement;
-    const optLowercase = container.querySelector('#opt-lowercase') as HTMLInputElement;
-    const optNumbers = container.querySelector('#opt-numbers') as HTMLInputElement;
-    const optSymbols = container.querySelector('#opt-symbols') as HTMLInputElement;
-    const optAmbiguous = container.querySelector('#opt-ambiguous') as HTMLInputElement;
+  const optUppercase = container.querySelector('#opt-uppercase') as HTMLInputElement;
+  const optLowercase = container.querySelector('#opt-lowercase') as HTMLInputElement;
+  const optNumbers = container.querySelector('#opt-numbers') as HTMLInputElement;
+  const optSymbols = container.querySelector('#opt-symbols') as HTMLInputElement;
+  const optAmbiguous = container.querySelector('#opt-ambiguous') as HTMLInputElement;
 
-    const getOptions = (): PasswordOptions => ({
-        length: parseInt(lengthSlider.value, 10),
-        uppercase: optUppercase.checked,
-        lowercase: optLowercase.checked,
-        numbers: optNumbers.checked,
-        symbols: optSymbols.checked,
-        excludeAmbiguous: optAmbiguous.checked,
-        excludeChars: '',
-    });
+  const optMemorable = container.querySelector('#opt-memorable') as HTMLInputElement;
 
-    const updateStrengthDisplay = (strength: PasswordStrength): void => {
-        strengthFill.style.width = `${(strength.score / 5) * 100}%`;
-        strengthFill.style.background = strength.color;
-        strengthLabel.textContent = strength.label;
-        strengthLabel.style.color = strength.color;
-        strengthEntropy.textContent = `${strength.entropy} bits entropy`;
-    };
+  const charOptions = container.querySelector('#char-options') as HTMLElement;
+  const excludeOptions = container.querySelector('#exclude-options') as HTMLElement;
 
-    const generatePassword = (): void => {
-        try {
-            const options = getOptions();
-            const password = PasswordGenerator.generate(options);
-            const strength = PasswordGenerator.calculateStrength(password);
+  const getOptions = (): PasswordOptions => ({
+    length: parseInt(lengthSlider.value, 10),
+    uppercase: optUppercase.checked,
+    lowercase: optLowercase.checked,
+    numbers: optNumbers.checked,
+    symbols: optSymbols.checked,
+    excludeAmbiguous: optAmbiguous.checked,
+    excludeChars: '',
+    memorable: optMemorable.checked,
+  });
 
-            passwordText.textContent = password;
-            updateStrengthDisplay(strength);
-        } catch (error) {
-            passwordText.textContent = error instanceof Error ? error.message : 'Generation failed';
-            updateStrengthDisplay({ score: 0, label: 'Very Weak', color: '#dc2626', entropy: 0 });
-        }
-    };
+  const updateStrengthDisplay = (strength: PasswordStrength): void => {
+    strengthFill.style.width = `${(strength.score / 5) * 100}%`;
+    strengthFill.style.background = strength.color;
+    strengthLabel.textContent = strength.label;
+    strengthLabel.style.color = strength.color;
+    strengthEntropy.textContent = `${strength.entropy} bits entropy`;
+  };
 
-    // Generate on button click
-    generateBtn.addEventListener('click', generatePassword);
+  const generatePassword = (): void => {
+    try {
+      const options = getOptions();
+      const password = PasswordGenerator.generate(options);
+      const strength = PasswordGenerator.calculateStrength(password);
 
-    // Update length display and regenerate
-    lengthSlider.addEventListener('input', () => {
-        lengthValue.textContent = lengthSlider.value;
-    });
+      passwordText.textContent = password;
+      updateStrengthDisplay(strength);
+    } catch (error) {
+      passwordText.textContent = error instanceof Error ? error.message : 'Generation failed';
+      updateStrengthDisplay({ score: 0, label: 'Very Weak', color: '#dc2626', entropy: 0 });
+    }
+  };
 
-    // Regenerate when options change
-    const optionInputs = [optUppercase, optLowercase, optNumbers, optSymbols, optAmbiguous, lengthSlider];
-    optionInputs.forEach(input => {
-        input.addEventListener('change', generatePassword);
-    });
+  // Toggle options visibility based on memorable setting
+  optMemorable.addEventListener('change', () => {
+    const isMemorable = optMemorable.checked;
 
-    // Copy to clipboard
-    copyBtn.addEventListener('click', async () => {
-        const text = passwordText.textContent || '';
-        if (!text || text.includes('Click Generate')) return;
+    // Hide incompatible options when memorable is checked
+    charOptions.style.display = isMemorable ? 'none' : 'block';
+    excludeOptions.style.display = isMemorable ? 'none' : 'block';
 
-        try {
-            await navigator.clipboard.writeText(text);
-            copyFeedback.classList.add('visible');
-            setTimeout(() => copyFeedback.classList.remove('visible'), 2000);
-        } catch {
-            try {
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-                copyFeedback.classList.add('visible');
-                setTimeout(() => copyFeedback.classList.remove('visible'), 2000);
-            } catch {
-                const errorToast = document.createElement('div');
-                errorToast.textContent = 'Failed to copy. Please copy manually.';
-                errorToast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#dc2626;color:white;padding:12px 20px;border-radius:8px;z-index:10000;';
-                document.body.appendChild(errorToast);
-                setTimeout(() => errorToast.remove(), 3000);
-            }
-        }
-    });
+    // Update length slider range logic could go here if needed
+    // For memorable, length is more about "min length" or "num words" but we reuse the slider
 
-    // Generate initial password
     generatePassword();
+  });
+
+  // Generate on button click
+  generateBtn.addEventListener('click', generatePassword);
+
+  // Update length display and regenerate
+  lengthSlider.addEventListener('input', () => {
+    lengthValue.textContent = lengthSlider.value;
+  });
+
+  // Regenerate when options change
+  const optionInputs = [optUppercase, optLowercase, optNumbers, optSymbols, optAmbiguous, lengthSlider];
+  optionInputs.forEach(input => {
+    input.addEventListener('change', generatePassword);
+  });
+
+  // Copy to clipboard
+  copyBtn.addEventListener('click', async () => {
+    const text = passwordText.textContent || '';
+    if (!text || text.includes('Click Generate')) return;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      copyFeedback.classList.add('visible');
+      setTimeout(() => copyFeedback.classList.remove('visible'), 2000);
+    } catch {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        copyFeedback.classList.add('visible');
+        setTimeout(() => copyFeedback.classList.remove('visible'), 2000);
+      } catch {
+        const errorToast = document.createElement('div');
+        errorToast.textContent = 'Failed to copy. Please copy manually.';
+        errorToast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#dc2626;color:white;padding:12px 20px;border-radius:8px;z-index:10000;';
+        document.body.appendChild(errorToast);
+        setTimeout(() => errorToast.remove(), 3000);
+      }
+    }
+  });
+
+  // Generate initial password
+  generatePassword();
 }

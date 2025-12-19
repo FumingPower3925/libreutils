@@ -6,6 +6,7 @@ export interface PasswordOptions {
     symbols: boolean;
     excludeAmbiguous: boolean;
     excludeChars: string;
+    memorable: boolean;
 }
 
 export interface PasswordStrength {
@@ -21,6 +22,30 @@ const NUMBERS = '0123456789';
 const SYMBOLS = '!@#$%^&*()_+-=[]{}|;:,.<>?';
 const AMBIGUOUS = 'Il1O0';
 
+// Word list for memorable passwords (common, easy-to-type words)
+const WORD_LIST = [
+    'apple', 'arrow', 'beach', 'berry', 'bird', 'blade', 'blaze', 'bloom', 'blue', 'bolt',
+    'brave', 'bread', 'brick', 'bridge', 'bright', 'brook', 'butter', 'cabin', 'cake', 'calm',
+    'candy', 'cargo', 'castle', 'cedar', 'chain', 'chalk', 'charm', 'chase', 'chess', 'chill',
+    'cliff', 'cloud', 'clover', 'coast', 'coral', 'cozy', 'crane', 'crisp', 'crown', 'crystal',
+    'dance', 'dawn', 'delta', 'dream', 'drift', 'eagle', 'earth', 'echo', 'ember', 'fable',
+    'falcon', 'field', 'flame', 'flash', 'fleet', 'flint', 'flora', 'forge', 'fox', 'frost',
+    'garden', 'gem', 'ghost', 'glade', 'gleam', 'globe', 'glory', 'gold', 'grape', 'green',
+    'grove', 'guide', 'halo', 'harbor', 'hawk', 'heart', 'hearth', 'hedge', 'hero', 'honey',
+    'hope', 'horse', 'ice', 'iron', 'island', 'ivy', 'jade', 'jazz', 'jewel', 'jungle',
+    'karma', 'kite', 'lake', 'lamp', 'lark', 'lemon', 'light', 'lily', 'lion', 'lotus',
+    'lunar', 'magic', 'maple', 'marble', 'meadow', 'mist', 'moon', 'moss', 'mountain', 'nest',
+    'noble', 'north', 'oak', 'ocean', 'olive', 'onyx', 'opal', 'orbit', 'orchid', 'owl',
+    'palm', 'paper', 'path', 'pearl', 'pebble', 'pepper', 'pine', 'pixel', 'plain', 'planet',
+    'plaza', 'plum', 'pond', 'prism', 'pulse', 'quartz', 'quest', 'quiet', 'rain', 'raven',
+    'realm', 'reef', 'ridge', 'river', 'robin', 'rock', 'rose', 'ruby', 'sage', 'sail',
+    'sand', 'sapphire', 'shade', 'shadow', 'shell', 'shine', 'silver', 'sky', 'slate', 'snow',
+    'solar', 'song', 'spark', 'spice', 'spirit', 'spring', 'spruce', 'star', 'steam', 'steel',
+    'stone', 'storm', 'stream', 'summit', 'sun', 'swift', 'temple', 'thistle', 'thunder', 'tide',
+    'tiger', 'tower', 'trail', 'tree', 'tulip', 'twilight', 'valley', 'velvet', 'vine', 'violet',
+    'wave', 'wheat', 'willow', 'wind', 'winter', 'wolf', 'wonder', 'wood', 'yarn', 'zenith'
+];
+
 export const DEFAULT_OPTIONS: PasswordOptions = {
     length: 16,
     uppercase: true,
@@ -29,10 +54,16 @@ export const DEFAULT_OPTIONS: PasswordOptions = {
     symbols: true,
     excludeAmbiguous: false,
     excludeChars: '',
+    memorable: false,
 };
 
 export class PasswordGenerator {
     static generate(options: PasswordOptions = DEFAULT_OPTIONS): string {
+        // Handle memorable password generation
+        if (options.memorable) {
+            return this.generateMemorable(options);
+        }
+
         let charset = '';
 
         if (options.uppercase) charset += UPPERCASE;
@@ -132,6 +163,56 @@ export class PasswordGenerator {
         if (options.symbols) ensureType(SYMBOLS);
 
         return chars.join('');
+    }
+
+    private static generateMemorable(options: PasswordOptions): string {
+        const words: string[] = [];
+        const separator = this.getRandomSeparator();
+
+        // Calculate how many words we can fit
+        // Average word length is ~5 chars
+        // We need at least 3 words for decent entropy
+        let count = Math.max(3, Math.floor(options.length / 6));
+
+        const getRandomWord = (): string => {
+            const array = new Uint32Array(1);
+            crypto.getRandomValues(array);
+            return WORD_LIST[array[0] % WORD_LIST.length];
+        };
+
+        for (let i = 0; i < count; i++) {
+            let word = getRandomWord();
+            // Capitalize if uppercase is selected
+            if (options.uppercase) {
+                word = word.charAt(0).toUpperCase() + word.slice(1);
+            }
+            words.push(word);
+        }
+
+        let password = words.join(separator);
+
+        if (options.numbers) {
+            const array = new Uint32Array(1);
+            crypto.getRandomValues(array);
+            const num = array[0] % 100;
+            // Prepend number to ensure it's not cut off by length limit
+            password = `${num}${separator}${password}`;
+        }
+
+        // Trim to length if needed
+        if (password.length > options.length) {
+            password = password.slice(0, options.length);
+            // If we sliced in the middle of a separator or word, it might look ugly but fulfills "memorable" + length constraint
+        }
+
+        return password;
+    }
+
+    private static getRandomSeparator(): string {
+        const separators = '-_!@#$%^&*';
+        const array = new Uint32Array(1);
+        crypto.getRandomValues(array);
+        return separators[array[0] % separators.length];
     }
 
     static calculateStrength(password: string): PasswordStrength {
