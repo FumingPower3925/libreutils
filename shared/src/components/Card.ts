@@ -2,37 +2,43 @@
  * Card Web Component
  */
 
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 export class LuCard extends HTMLElement {
-    static tagName = 'lu-card';
+  static tagName = 'lu-card';
 
-    constructor() {
-        super();
-        this.attachShadow({ mode: 'open' });
-    }
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+  }
 
-    static get observedAttributes(): string[] {
-        return ['title', 'description', 'href', 'category'];
-    }
+  static get observedAttributes(): string[] {
+    return ['title', 'description', 'href', 'category'];
+  }
 
-    connectedCallback(): void {
-        this.render();
-    }
+  connectedCallback(): void {
+    this.render();
+  }
 
-    attributeChangedCallback(): void {
-        this.render();
-    }
+  attributeChangedCallback(): void {
+    this.render();
+  }
 
-    private render(): void {
-        if (!this.shadowRoot) return;
+  private render(): void {
+    if (!this.shadowRoot) return;
 
-        const title = this.getAttribute('title') || '';
-        const description = this.getAttribute('description') || '';
-        const href = this.getAttribute('href') || '#';
-        const category = this.getAttribute('category') || '';
+    const title = escapeHtml(this.getAttribute('title') || '');
+    const description = escapeHtml(this.getAttribute('description') || '');
+    const href = escapeHtml(this.getAttribute('href') || '#');
+    const category = escapeHtml(this.getAttribute('category') || '');
 
-        const isInteractive = href !== '#';
+    const isInteractive = href !== '#';
 
-        this.shadowRoot.innerHTML = `
+    this.shadowRoot.innerHTML = `
       <style>
         :host {
           display: block;
@@ -129,5 +135,5 @@ export class LuCard extends HTMLElement {
         ` : ''}
       ${isInteractive ? '</a>' : '</div>'}
     `;
-    }
+  }
 }

@@ -25,15 +25,20 @@ export function createRouter(options: RouterOptions): Router {
 
         container.innerHTML = '';
 
-        if (route) {
-            document.title = `${route.title} | LibreUtils`;
-            const element = await route.render();
-            container.appendChild(element);
-        } else if (notFound) {
-            document.title = 'Not Found | LibreUtils';
-            container.appendChild(notFound());
-        } else {
-            container.innerHTML = '<h1>Page not found</h1>';
+        try {
+            if (route) {
+                document.title = `${route.title} | LibreUtils`;
+                const element = await route.render();
+                container.appendChild(element);
+            } else if (notFound) {
+                document.title = 'Not Found | LibreUtils';
+                container.appendChild(notFound());
+            } else {
+                container.innerHTML = '<h1>Page not found</h1>';
+            }
+        } catch (error) {
+            console.error('Route render error:', error);
+            container.innerHTML = '<h1>Something went wrong</h1><p>Please try refreshing the page.</p>';
         }
     }
 

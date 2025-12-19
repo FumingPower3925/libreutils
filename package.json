@@ -21,7 +21,7 @@
     "clean": "rm -rf node_modules shared/node_modules tools/*/node_modules dist shared/dist tools/*/dist",
     "test": "bun test",
     "test:unit": "bun test --filter '*.test.ts'",
-    "test:e2e": "bun test --filter '*.e2e.ts'",
+    "test:e2e": "bun test --filter '*.e2e.test.ts'",
     "lint": "bun run typecheck",
     "typecheck": "tsc --noEmit",
     "version:sync": "bun run ./scripts/sync-version.ts",

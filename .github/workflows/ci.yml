@@ -100,7 +100,7 @@ jobs:
       
       - name: Run e2e tests for ${{ matrix.tool }}
         run: |
-          if [ -f "tools/${{ matrix.tool }}/tests/e2e.test.ts" ]; then
+          if [ -f "tools/${{ matrix.tool }}/tests/e2e.e2e.test.ts" ]; then
             bun test tools/${{ matrix.tool }}/tests
           fi
 
