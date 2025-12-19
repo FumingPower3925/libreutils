@@ -33,7 +33,7 @@ self.addEventListener('activate', (event) => {
                 .then(() => {
                     // Only notify clients if there were old caches (meaning this is an update)
                     if (oldCaches.length > 0) {
-                        self.clients.matchAll().then((clients) => {
+                        return self.clients.matchAll().then((clients) => {
                             clients.forEach((client) => {
                                 client.postMessage({
                                     type: 'SW_UPDATED',

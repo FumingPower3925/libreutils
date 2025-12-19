@@ -10,7 +10,6 @@
         "./meta": "./src/meta.ts"
     },
     "scripts": {
-        "dev": "bun run ./src/dev.ts",
         "build": "bun build ./src/index.ts --outdir ./dist --target browser --minify"
     },
     "dependencies": {

@@ -279,7 +279,7 @@ export class PasswordGenerator {
     }
 
     /**
-     * Generates multiple unique passwords.
+     * Generates multiple passwords.
      * @param count Number of passwords to generate
      * @param options Password generation options
      * @returns Array of generated passwords
