@@ -25,20 +25,24 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
     event.waitUntil(
         caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames
-                    .filter((name) => name.startsWith('libreutils-') && name !== CACHE_NAME)
-                    .map((name) => caches.delete(name))
+            const oldCaches = cacheNames.filter(
+                (name) => name.startsWith('libreutils-') && name !== CACHE_NAME
             );
-        }).then(() => {
-            self.clients.matchAll().then((clients) => {
-                clients.forEach((client) => {
-                    client.postMessage({
-                        type: 'SW_UPDATED',
-                        version: CACHE_VERSION
-                    });
+
+            return Promise.all(oldCaches.map((name) => caches.delete(name)))
+                .then(() => {
+                    // Only notify clients if there were old caches (meaning this is an update)
+                    if (oldCaches.length > 0) {
+                        self.clients.matchAll().then((clients) => {
+                            clients.forEach((client) => {
+                                client.postMessage({
+                                    type: 'SW_UPDATED',
+                                    version: CACHE_VERSION
+                                });
+                            });
+                        });
+                    }
                 });
-            });
         })
     );
     self.clients.claim();
