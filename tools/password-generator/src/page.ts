@@ -305,7 +305,7 @@ export function renderPasswordGeneratorPage(): HTMLElement {
     <div class="password-display">
       <div class="password-output">
         <span class="password-text" id="password-text">Click Generate to create a password</span>
-        <button class="copy-btn" id="copy-btn" title="Copy to clipboard">
+        <button class="copy-btn" id="copy-btn" title="Copy to clipboard" aria-label="Copy password to clipboard">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
             <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
@@ -338,7 +338,7 @@ export function renderPasswordGeneratorPage(): HTMLElement {
           <span class="option-label-text">Password Length</span>
           <span class="option-value" id="length-value">16</span>
         </div>
-        <input type="range" class="length-slider" id="length-slider" min="4" max="128" value="16">
+        <input type="range" class="length-slider" id="length-slider" min="4" max="128" value="16" aria-label="Password length">
       </div>
       
       <div class="option-group">
@@ -387,7 +387,7 @@ export function renderPasswordGeneratorPage(): HTMLElement {
       </div>
     </div>
     
-    <div class="copy-feedback" id="copy-feedback">Copied to clipboard!</div>
+    <div class="copy-feedback" id="copy-feedback" role="status" aria-live="polite">Copied to clipboard!</div>
   `;
 
   setupEventListeners(container);
@@ -462,7 +462,7 @@ function setupEventListeners(container: HTMLElement): void {
 
   lengthSlider.addEventListener('input', () => {
     lengthValue.textContent = lengthSlider.value;
-    generatePassword(); // Real-time update
+    generatePassword();
   });
 
   const optionInputs = [optUppercase, optLowercase, optNumbers, optSymbols, optAmbiguous];

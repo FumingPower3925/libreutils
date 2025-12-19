@@ -100,7 +100,6 @@ export class PasswordGenerator {
         }
 
 
-
         let password = '';
         for (let i = 0; i < options.length; i++) {
             const index = this.getUnbiasedRandomInt(charset.length);
@@ -148,7 +147,6 @@ export class PasswordGenerator {
 
             const hasType = chars.some(c => filtered.includes(c));
             if (!hasType) {
-                // Collect all positions that are not yet reserved, so we can pick one safely.
                 const availablePositions: number[] = [];
                 for (let i = 0; i < password.length; i++) {
                     if (!positions.has(i)) {
@@ -156,8 +154,6 @@ export class PasswordGenerator {
                     }
                 }
 
-                // If there are no available positions left, we cannot safely insert this type
-                // without overwriting previously ensured character types.
                 if (availablePositions.length === 0) {
                     return;
                 }
@@ -184,8 +180,6 @@ export class PasswordGenerator {
     private static getUnbiasedRandomInt(max: number): number {
         if (max <= 0) throw new Error('max must be positive');
 
-        // Determine the largest multiple of max that fits in uint32
-        // We reject any random value >= limit to avoid bias
         const maxUint32 = 0xFFFFFFFF;
         const limit = maxUint32 - (maxUint32 % max);
         const array = new Uint32Array(1);
@@ -194,7 +188,7 @@ export class PasswordGenerator {
         do {
             crypto.getRandomValues(array);
             value = array[0];
-        } while (value >= limit); // Reject values in the biased range
+        } while (value >= limit);
 
         return value % max;
     }
