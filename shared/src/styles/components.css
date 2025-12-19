@@ -1,0 +1,124 @@
+/**
+ * LibreUtils Component Styles
+ */
+
+/* Buttons */
+.lu-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--lu-space-2);
+    padding: var(--lu-space-2) var(--lu-space-4);
+    font-family: inherit;
+    font-size: var(--lu-text-sm);
+    font-weight: 500;
+    line-height: 1;
+    border: none;
+    border-radius: var(--lu-radius-md);
+    cursor: pointer;
+    transition: all var(--lu-transition-fast);
+}
+
+.lu-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.lu-btn-primary {
+    background: linear-gradient(135deg, var(--lu-primary-500), var(--lu-primary-600));
+    color: white;
+    box-shadow: var(--lu-shadow-sm);
+}
+
+.lu-btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, var(--lu-primary-600), var(--lu-primary-700));
+    box-shadow: var(--lu-shadow-md);
+    transform: translateY(-1px);
+}
+
+.lu-btn-secondary {
+    background: var(--lu-bg-card);
+    color: var(--lu-text-primary);
+    border: 1px solid var(--lu-border);
+}
+
+.lu-btn-secondary:hover:not(:disabled) {
+    background: var(--lu-bg-secondary);
+    border-color: var(--lu-border-strong);
+}
+
+/* Cards */
+.lu-card {
+    background: var(--lu-bg-card);
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius-lg);
+    padding: var(--lu-space-6);
+    transition: all var(--lu-transition-normal);
+}
+
+.lu-card-interactive:hover {
+    border-color: var(--lu-primary-300);
+    box-shadow: var(--lu-shadow-md);
+    transform: translateY(-2px);
+}
+
+/* Inputs */
+.lu-input {
+    width: 100%;
+    padding: var(--lu-space-3) var(--lu-space-4);
+    font-family: inherit;
+    font-size: var(--lu-text-base);
+    color: var(--lu-text-primary);
+    background: var(--lu-bg-card);
+    border: 1px solid var(--lu-border);
+    border-radius: var(--lu-radius-md);
+    transition: all var(--lu-transition-fast);
+}
+
+.lu-input:focus {
+    outline: none;
+    border-color: var(--lu-primary-500);
+    box-shadow: 0 0 0 3px var(--lu-primary-100);
+}
+
+@media (prefers-color-scheme: dark) {
+    .lu-input:focus {
+        box-shadow: 0 0 0 3px var(--lu-primary-900);
+    }
+}
+
+.lu-input::placeholder {
+    color: var(--lu-text-muted);
+}
+
+/* Labels */
+.lu-label {
+    display: block;
+    margin-bottom: var(--lu-space-2);
+    font-size: var(--lu-text-sm);
+    font-weight: 500;
+    color: var(--lu-text-secondary);
+}
+
+/* Badges */
+.lu-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--lu-space-1);
+    padding: var(--lu-space-1) var(--lu-space-2);
+    font-size: var(--lu-text-xs);
+    font-weight: 500;
+    border-radius: var(--lu-radius-full);
+    background: var(--lu-bg-secondary);
+    color: var(--lu-text-secondary);
+}
+
+.lu-badge-primary {
+    background: var(--lu-primary-100);
+    color: var(--lu-primary-700);
+}
+
+.lu-badge-success {
+    background: var(--lu-success-light);
+    color: var(--lu-success);
+}
