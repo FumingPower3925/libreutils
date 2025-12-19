@@ -447,31 +447,23 @@ function setupEventListeners(container: HTMLElement): void {
   optMemorable.addEventListener('change', () => {
     const isMemorable = optMemorable.checked;
 
-    // Hide incompatible options when memorable is checked
     charOptions.style.display = isMemorable ? 'none' : 'block';
     excludeOptions.style.display = isMemorable ? 'none' : 'block';
-
-    // Update length slider range logic could go here if needed
-    // For memorable, length is more about "min length" or "num words" but we reuse the slider
 
     generatePassword();
   });
 
-  // Generate on button click
   generateBtn.addEventListener('click', generatePassword);
 
-  // Update length display and regenerate
   lengthSlider.addEventListener('input', () => {
     lengthValue.textContent = lengthSlider.value;
   });
 
-  // Regenerate when options change
   const optionInputs = [optUppercase, optLowercase, optNumbers, optSymbols, optAmbiguous, lengthSlider];
   optionInputs.forEach(input => {
     input.addEventListener('change', generatePassword);
   });
 
-  // Copy to clipboard
   copyBtn.addEventListener('click', async () => {
     const text = passwordText.textContent || '';
     if (!text || text.includes('Click Generate')) return;
@@ -500,6 +492,5 @@ function setupEventListeners(container: HTMLElement): void {
     }
   });
 
-  // Generate initial password
   generatePassword();
 }

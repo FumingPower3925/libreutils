@@ -59,7 +59,6 @@ export const DEFAULT_OPTIONS: PasswordOptions = {
 
 export class PasswordGenerator {
     static generate(options: PasswordOptions = DEFAULT_OPTIONS): string {
-        // Handle memorable password generation
         if (options.memorable) {
             return this.generateMemorable(options);
         }
@@ -75,14 +74,12 @@ export class PasswordGenerator {
             throw new Error('At least one character type must be selected');
         }
 
-        // Remove ambiguous characters if requested
         if (options.excludeAmbiguous) {
             for (const char of AMBIGUOUS) {
                 charset = charset.replace(new RegExp(char, 'g'), '');
             }
         }
 
-        // Remove custom excluded characters
         if (options.excludeChars) {
             for (const char of options.excludeChars) {
                 charset = charset.replace(new RegExp(this.escapeRegExp(char), 'g'), '');
@@ -93,7 +90,6 @@ export class PasswordGenerator {
             throw new Error('No characters available after exclusions');
         }
 
-        // Use crypto.getRandomValues for cryptographically secure randomness
         const array = new Uint32Array(options.length);
         crypto.getRandomValues(array);
 
@@ -102,7 +98,6 @@ export class PasswordGenerator {
             password += charset[array[i] % charset.length];
         }
 
-        // Ensure at least one character from each selected type
         password = this.ensureCharacterTypes(password, options, charset);
 
         return password;
@@ -169,9 +164,6 @@ export class PasswordGenerator {
         const words: string[] = [];
         const separator = this.getRandomSeparator();
 
-        // Calculate how many words we can fit
-        // Average word length is ~5 chars
-        // We need at least 3 words for decent entropy
         let count = Math.max(3, Math.floor(options.length / 6));
 
         const getRandomWord = (): string => {
@@ -199,10 +191,8 @@ export class PasswordGenerator {
             password = `${num}${separator}${password}`;
         }
 
-        // Trim to length if needed
         if (password.length > options.length) {
             password = password.slice(0, options.length);
-            // If we sliced in the middle of a separator or word, it might look ugly but fulfills "memorable" + length constraint
         }
 
         return password;
