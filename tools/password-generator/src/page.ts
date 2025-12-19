@@ -314,7 +314,7 @@ export function renderPasswordGeneratorPage(): HTMLElement {
       </div>
       
       <div class="strength-bar">
-        <div class="strength-fill" id="strength-fill" style="width: 0%; background: #dc2626;"></div>
+        <div class="strength-fill" id="strength-fill" role="progressbar" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0" style="width: 0%; background: #dc2626;"></div>
       </div>
       <div class="strength-info">
         <span class="strength-label" id="strength-label">-</span>
@@ -435,6 +435,7 @@ function setupEventListeners(container: HTMLElement): void {
   const updateStrengthDisplay = (strength: PasswordStrength): void => {
     strengthFill.style.width = `${Math.min(100, (strength.score / 5) * 100)}%`;
     strengthFill.style.background = strength.color;
+    strengthFill.setAttribute('aria-valuenow', strength.score.toString());
     strengthLabel.textContent = strength.label;
     strengthLabel.style.color = strength.color;
     strengthEntropy.textContent = `${strength.entropy} bits entropy`;
@@ -459,6 +460,12 @@ function setupEventListeners(container: HTMLElement): void {
 
     charOptions.style.display = isMemorable ? 'none' : 'block';
     excludeOptions.style.display = isMemorable ? 'none' : 'block';
+
+    // Disable inputs when hidden to prevent interaction/reading
+    const inputs = [optUppercase, optLowercase, optNumbers, optSymbols, optAmbiguous];
+    inputs.forEach(input => {
+      input.disabled = isMemorable;
+    });
 
     generatePassword();
   });

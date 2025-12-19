@@ -1,11 +1,19 @@
 export interface PasswordOptions {
+    /** Length of the generated password (4-2048) */
     length: number;
+    /** Include uppercase letters (A-Z) */
     uppercase: boolean;
+    /** Include lowercase letters (a-z) */
     lowercase: boolean;
+    /** Include numbers (0-9) */
     numbers: boolean;
+    /** Include special symbols (!@#$...) */
     symbols: boolean;
+    /** Exclude visually similar characters (e.g. I, l, 1, O, 0) */
     excludeAmbiguous: boolean;
+    /** String of specific characters to exclude */
     excludeChars: string;
+    /** Generate a memorable password (words separated by symbols) */
     memorable: boolean;
 }
 
@@ -83,16 +91,26 @@ export class PasswordGenerator {
             throw new Error('At least one character type must be selected');
         }
 
-        if (options.excludeAmbiguous) {
-            for (const char of AMBIGUOUS) {
-                charset = charset.replace(new RegExp(char, 'g'), '');
+        if (options.excludeAmbiguous || options.excludeChars) {
+            const excluded = new Set<string>();
+            if (options.excludeAmbiguous) {
+                for (const char of AMBIGUOUS) {
+                    excluded.add(char);
+                }
             }
-        }
+            if (options.excludeChars) {
+                for (const char of options.excludeChars) {
+                    excluded.add(char);
+                }
+            }
 
-        if (options.excludeChars) {
-            for (const char of options.excludeChars) {
-                charset = charset.replace(new RegExp(this.escapeRegExp(char), 'g'), '');
+            let filtered = '';
+            for (const char of charset) {
+                if (!excluded.has(char)) {
+                    filtered += char;
+                }
             }
+            charset = filtered;
         }
 
         if (charset.length === 0) {
@@ -195,9 +213,11 @@ export class PasswordGenerator {
 
     private static generateMemorable(options: PasswordOptions): string {
         const words: string[] = [];
-        const separator = this.getRandomSeparator();
+        const separator = this.getRandomSeparator(options.symbols);
 
-        const count = Math.max(3, Math.floor(options.length / 6));
+        // Calculate count accounting for average word length (5) + separator (1)
+        // Ensure at least 2 words if length permits
+        const count = Math.max(2, Math.floor(options.length / 6));
 
         const getRandomWord = (): string => {
             const index = this.getUnbiasedRandomInt(WORD_LIST.length);
@@ -235,8 +255,8 @@ export class PasswordGenerator {
         return password;
     }
 
-    private static getRandomSeparator(): string {
-        const separators = '-_!@#$%^&*';
+    private static getRandomSeparator(useSymbols: boolean = true): string {
+        const separators = useSymbols ? '-_!@#$%^&*' : '-_';
         const index = this.getUnbiasedRandomInt(separators.length);
         return separators[index];
     }

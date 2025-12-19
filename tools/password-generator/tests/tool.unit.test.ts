@@ -67,6 +67,33 @@ describe('PasswordGenerator', () => {
             expect(password).not.toMatch(/[Il1O0]/);
         });
 
+        test('excludes specific characters defined in excludeChars', () => {
+            const options: PasswordOptions = {
+                ...DEFAULT_OPTIONS,
+                length: 100,
+                excludeChars: 'abc123',
+                // ensure we include these types so they would otherwise be present
+                uppercase: false,
+                lowercase: true,
+                numbers: true,
+                symbols: false,
+            };
+            const password = PasswordGenerator.generate(options);
+            expect(password).not.toMatch(/[abc123]/);
+        });
+
+        test('throws error when all characters are excluded', () => {
+            const options: PasswordOptions = {
+                ...DEFAULT_OPTIONS,
+                lowercase: true,
+                uppercase: false,
+                numbers: false,
+                symbols: false,
+                excludeChars: 'abcdefghijklmnopqrstuvwxyz',
+            };
+            expect(() => PasswordGenerator.generate(options)).toThrow('No characters available after exclusions');
+        });
+
         test('throws error when no character types selected', () => {
             const options: PasswordOptions = {
                 ...DEFAULT_OPTIONS,
@@ -166,6 +193,15 @@ describe('PasswordGenerator', () => {
             const passwords = PasswordGenerator.generateMultiple(5, options);
             const hasNumbers = passwords.some(p => /\d/.test(p));
             expect(hasNumbers).toBe(true);
+        });
+
+        test('uses simple separators when symbols are disabled', () => {
+            const options: PasswordOptions = { ...DEFAULT_OPTIONS, memorable: true, symbols: false, length: 50 };
+            const password = PasswordGenerator.generate(options);
+            // Should contain only words, numbers (if enabled), and separators -_
+            // Separators in this mode are only - or _
+            // We check that it does NOT contain other symbols like @#$%^&*
+            expect(password).not.toMatch(/[!@#$%^&*]/);
         });
     });
 });
