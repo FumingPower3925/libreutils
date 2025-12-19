@@ -378,7 +378,7 @@ function setupEventListeners(container: HTMLElement): void {
       await navigator.clipboard.writeText(outputText.value);
       copyFeedback.classList.add('visible');
       setTimeout(() => copyFeedback.classList.remove('visible'), 2000);
-    } catch (err) {
+    } catch {
       try {
         outputText.select();
         document.execCommand('copy');

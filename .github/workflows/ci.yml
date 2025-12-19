@@ -45,8 +45,14 @@ jobs:
             BASE="${{ github.event.before }}"
           fi
           
-          # Get changed files
-          CHANGED_FILES=$(git diff --name-only $BASE ${{ github.sha }} 2>/dev/null || echo "")
+          # Handle initial commit (before is all zeros or empty)
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            # First commit - treat all files as changed
+            CHANGED_FILES=$(git ls-files)
+          else
+            # Get changed files
+            CHANGED_FILES=$(git diff --name-only $BASE ${{ github.sha }} 2>/dev/null || echo "")
+          fi
           
           # Find modified tools
           TOOLS=$(echo "$CHANGED_FILES" | grep "^tools/" | cut -d'/' -f2 | sort -u | tr '\n' ' ')
