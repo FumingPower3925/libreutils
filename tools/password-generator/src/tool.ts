@@ -220,7 +220,16 @@ export class PasswordGenerator {
         }
 
         if (password.length > options.length) {
-            password = password.slice(0, options.length);
+            // Prefer removing complete word segments before falling back to character-level truncation.
+            const parts = password.split(separator);
+            while (parts.length > 1 && parts.join(separator).length > options.length) {
+                parts.pop();
+            }
+            password = parts.join(separator);
+            // As a last resort, hard-truncate if still too long
+            if (password.length > options.length) {
+                password = password.slice(0, options.length);
+            }
         }
 
         return password;

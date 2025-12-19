@@ -338,7 +338,7 @@ export function renderPasswordGeneratorPage(): HTMLElement {
           <span class="option-label-text">Password Length</span>
           <span class="option-value" id="length-value">16</span>
         </div>
-        <input type="range" class="length-slider" id="length-slider" min="4" max="128" value="16" aria-label="Password length">
+        <input type="range" class="length-slider" id="length-slider" min="4" max="128" value="16" aria-label="Password length" aria-valuemin="4" aria-valuemax="128" aria-valuenow="16">
       </div>
       
       <div class="option-group">
@@ -416,6 +416,11 @@ function setupEventListeners(container: HTMLElement): void {
   const charOptions = container.querySelector('#char-options') as HTMLElement;
   const excludeOptions = container.querySelector('#exclude-options') as HTMLElement;
 
+  /*
+   Note: hidden options (like character types when 'memorable' is checked) are still read here.
+   However, the generator's logic ignores irrelevant options for the chosen mode, so this is safe
+   and preserves user state when switching modes.
+   */
   const getOptions = (): PasswordOptions => ({
     length: parseInt(lengthSlider.value, 10),
     uppercase: optUppercase.checked,
@@ -462,6 +467,7 @@ function setupEventListeners(container: HTMLElement): void {
 
   lengthSlider.addEventListener('input', () => {
     lengthValue.textContent = lengthSlider.value;
+    lengthSlider.setAttribute('aria-valuenow', lengthSlider.value);
     generatePassword();
   });
 
