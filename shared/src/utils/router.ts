@@ -24,6 +24,7 @@ export function createRouter(options: RouterOptions): Router {
         const route = routes.find(r => r.path === path);
 
         container.innerHTML = '';
+        window.scrollTo(0, 0);
 
         try {
             if (route) {
