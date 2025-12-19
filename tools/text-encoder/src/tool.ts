@@ -15,8 +15,8 @@ export interface EncodingOption {
 }
 
 export const ENCODING_OPTIONS: EncodingOption[] = [
-    { id: 'base64', name: 'Base64', description: 'Standard Base64 encoding' },
-    { id: 'base64url', name: 'Base64 URL', description: 'URL-safe Base64 encoding' },
+    { id: 'base64', name: 'Base64', description: 'Standard Base64 encoding (RFC 4648)' },
+    { id: 'base64url', name: 'Base64 URL', description: 'URL-safe Base64 encoding (RFC 4648 Section 5)' },
     { id: 'url', name: 'URL Encode', description: 'Encode for URLs (encodeURI)' },
     { id: 'urlComponent', name: 'URL Component', description: 'Encode URL components (encodeURIComponent)' },
     { id: 'html', name: 'HTML Entities', description: 'Encode HTML special characters' },
@@ -25,14 +25,35 @@ export const ENCODING_OPTIONS: EncodingOption[] = [
     { id: 'binary', name: 'Binary', description: 'Binary representation (8-bit)' },
 ];
 
+function textToBytes(text: string): Uint8Array {
+    return new TextEncoder().encode(text);
+}
+
+function bytesToText(bytes: Uint8Array): string {
+    return new TextDecoder().decode(bytes);
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+    return btoa(String.fromCharCode(...bytes));
+}
+
+function base64ToBytes(base64: string): Uint8Array {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+}
+
 export class TextEncoderTool {
     static encode(text: string, type: EncodingType): string {
         switch (type) {
             case 'base64':
-                return btoa(unescape(encodeURIComponent(text)));
+                return bytesToBase64(textToBytes(text));
 
             case 'base64url':
-                const base64 = btoa(unescape(encodeURIComponent(text)));
+                const base64 = bytesToBase64(textToBytes(text));
                 return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 
             case 'url':
@@ -62,12 +83,12 @@ export class TextEncoderTool {
                     .join('');
 
             case 'hex':
-                return Array.from(new TextEncoder().encode(text))
+                return Array.from(textToBytes(text))
                     .map(b => b.toString(16).padStart(2, '0'))
                     .join(' ');
 
             case 'binary':
-                return Array.from(new TextEncoder().encode(text))
+                return Array.from(textToBytes(text))
                     .map(b => b.toString(2).padStart(8, '0'))
                     .join(' ');
 
@@ -80,7 +101,7 @@ export class TextEncoderTool {
         switch (type) {
             case 'base64':
                 try {
-                    return decodeURIComponent(escape(atob(text)));
+                    return bytesToText(base64ToBytes(text));
                 } catch {
                     throw new Error('Invalid Base64 string');
                 }
@@ -89,7 +110,7 @@ export class TextEncoderTool {
                 try {
                     let base64 = text.replace(/-/g, '+').replace(/_/g, '/');
                     while (base64.length % 4) base64 += '=';
-                    return decodeURIComponent(escape(atob(base64)));
+                    return bytesToText(base64ToBytes(base64));
                 } catch {
                     throw new Error('Invalid Base64 URL string');
                 }
@@ -109,9 +130,8 @@ export class TextEncoderTool {
                 }
 
             case 'html':
-                const textarea = document.createElement('textarea');
-                textarea.innerHTML = text;
-                return textarea.value;
+                const doc = new DOMParser().parseFromString(text, 'text/html');
+                return doc.documentElement.textContent || '';
 
             case 'unicode':
                 return text.replace(/\\u\{([0-9a-fA-F]+)\}|\\u([0-9a-fA-F]{4})/g, (_, p1, p2) => {
@@ -121,11 +141,11 @@ export class TextEncoderTool {
 
             case 'hex':
                 const hexBytes = text.replace(/\s+/g, '').match(/.{1,2}/g) || [];
-                return new TextDecoder().decode(new Uint8Array(hexBytes.map(b => parseInt(b, 16))));
+                return bytesToText(new Uint8Array(hexBytes.map(b => parseInt(b, 16))));
 
             case 'binary':
                 const binaryBytes = text.split(/\s+/).filter(b => b);
-                return new TextDecoder().decode(new Uint8Array(binaryBytes.map(b => parseInt(b, 2))));
+                return bytesToText(new Uint8Array(binaryBytes.map(b => parseInt(b, 2))));
 
             default:
                 throw new Error(`Unknown encoding type: ${type}`);

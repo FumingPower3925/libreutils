@@ -49,48 +49,62 @@ function showUpdateToast(version?: string): void {
 
     const toast = document.createElement('div');
     toast.id = 'update-toast';
-    toast.innerHTML = `
-        <style>
-            #update-toast {
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: var(--lu-primary-500, #613E9C);
-                color: white;
-                padding: 12px 20px;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                z-index: 10000;
-                font-family: var(--lu-font-sans, system-ui);
-                animation: slideUp 0.3s ease;
-            }
-            @keyframes slideUp {
-                from { transform: translateX(-50%) translateY(100px); opacity: 0; }
-                to { transform: translateX(-50%) translateY(0); opacity: 1; }
-            }
-            #update-toast button {
-                background: white;
-                color: var(--lu-primary-500, #613E9C);
-                border: none;
-                padding: 6px 12px;
-                border-radius: 4px;
-                font-weight: 600;
-                cursor: pointer;
-            }
-            #update-toast .dismiss {
-                background: transparent;
-                color: white;
-                opacity: 0.7;
-            }
-        </style>
-        <span>New version${version ? ` (v${version})` : ''} available!</span>
-        <button onclick="location.reload()">Refresh</button>
-        <button class="dismiss" onclick="this.closest('#update-toast').remove()">X</button>
+
+    const style = document.createElement('style');
+    style.textContent = `
+        #update-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--lu-primary-500, #613E9C);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 10000;
+            font-family: var(--lu-font-sans, system-ui);
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        #update-toast button {
+            background: white;
+            color: var(--lu-primary-500, #613E9C);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        #update-toast .dismiss {
+            background: transparent;
+            color: white;
+            opacity: 0.7;
+        }
     `;
+
+    const message = document.createElement('span');
+    message.textContent = `New version${version ? ` (v${version})` : ''} available!`;
+
+    const refreshBtn = document.createElement('button');
+    refreshBtn.textContent = 'Refresh';
+    refreshBtn.addEventListener('click', () => location.reload());
+
+    const dismissBtn = document.createElement('button');
+    dismissBtn.className = 'dismiss';
+    dismissBtn.textContent = 'X';
+    dismissBtn.addEventListener('click', () => toast.remove());
+
+    toast.appendChild(style);
+    toast.appendChild(message);
+    toast.appendChild(refreshBtn);
+    toast.appendChild(dismissBtn);
     document.body.appendChild(toast);
 }
 

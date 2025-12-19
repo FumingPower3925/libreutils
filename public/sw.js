@@ -10,7 +10,14 @@ const STATIC_ASSETS = [
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+        (async () => {
+            try {
+                const cache = await caches.open(CACHE_NAME);
+                await cache.addAll(STATIC_ASSETS);
+            } catch (error) {
+                console.error('[SW] Failed to cache static assets:', error);
+            }
+        })()
     );
     self.skipWaiting();
 });

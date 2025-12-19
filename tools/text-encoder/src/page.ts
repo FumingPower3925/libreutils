@@ -378,12 +378,20 @@ function setupEventListeners(container: HTMLElement): void {
       await navigator.clipboard.writeText(outputText.value);
       copyFeedback.classList.add('visible');
       setTimeout(() => copyFeedback.classList.remove('visible'), 2000);
-    } catch {
-      // Fallback for older browsers
-      outputText.select();
-      document.execCommand('copy');
-      copyFeedback.classList.add('visible');
-      setTimeout(() => copyFeedback.classList.remove('visible'), 2000);
+    } catch (err) {
+      try {
+        outputText.select();
+        document.execCommand('copy');
+        copyFeedback.classList.add('visible');
+        setTimeout(() => copyFeedback.classList.remove('visible'), 2000);
+      } catch {
+        const errorToast = document.createElement('div');
+        errorToast.className = 'error-toast';
+        errorToast.textContent = 'Failed to copy. Please copy manually.';
+        errorToast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#dc2626;color:white;padding:12px 20px;border-radius:8px;z-index:10000;';
+        document.body.appendChild(errorToast);
+        setTimeout(() => errorToast.remove(), 3000);
+      }
     }
   });
 }

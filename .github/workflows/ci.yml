@@ -128,9 +128,12 @@ jobs:
       
       - name: Check for broken links in README
         run: |
-          # Extract URLs from README.md and check them
-          grep -oE 'https?://[^)]+' README.md | while read url; do
-            status=$(curl -s -o /dev/null -w "%{http_code}" "$url" || echo "000")
+          # Extract URLs from Markdown links [text](url) and raw URLs
+          grep -oE '\[[^]]*\]\((https?://[^)[:space:]]+)\)|(https?://[^[:space:]\)]+)' README.md \
+            | sed -E 's/.*\((https?:\/\/[^)]+)\).*/\1/' \
+            | sort -u \
+            | while read url; do
+            status=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$url" || echo "000")
             if [ "$status" = "000" ] || [ "$status" -ge 400 ]; then
               echo "Broken link: $url (status: $status)"
               exit 1
