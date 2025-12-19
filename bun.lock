@@ -5,23 +5,32 @@
       "name": "libreutils",
       "devDependencies": {
         "@types/bun": "^1.3.5",
-        "typescript": "^5.3.3",
+        "typescript": "5.9.3",
       },
     },
     "shared": {
       "name": "@libreutils/shared",
       "version": "0.1.0",
     },
+    "tools/password-generator": {
+      "name": "@libreutils/tool-password-generator",
+      "version": "0.1.0",
+      "dependencies": {
+        "@libreutils/shared": "file:../../shared",
+      },
+    },
     "tools/text-encoder": {
       "name": "@libreutils/tool-text-encoder",
       "version": "0.1.0",
       "dependencies": {
-        "@libreutils/shared": "workspace:*",
+        "@libreutils/shared": "file:../../shared",
       },
     },
   },
   "packages": {
     "@libreutils/shared": ["@libreutils/shared@workspace:shared"],
+
+    "@libreutils/tool-password-generator": ["@libreutils/tool-password-generator@workspace:tools/password-generator"],
 
     "@libreutils/tool-text-encoder": ["@libreutils/tool-text-encoder@workspace:tools/text-encoder"],
 
@@ -34,5 +43,9 @@
     "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "undici-types": ["undici-types@7.16.0", "", {}, "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw=="],
+
+    "@libreutils/tool-password-generator/@libreutils/shared": ["@libreutils/shared@file:shared", {}],
+
+    "@libreutils/tool-text-encoder/@libreutils/shared": ["@libreutils/shared@file:shared", {}],
   }
 }
