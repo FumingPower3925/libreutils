@@ -1,0 +1,34 @@
+{
+  "name": "libreutils",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A privacy-first collection of useful web tools that run entirely in your browser",
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FumingPower3925/libreutils.git"
+  },
+  "workspaces": [
+    "shared",
+    "tools/*"
+  ],
+  "scripts": {
+    "dev": "bun run ./src/dev.ts",
+    "build": "bun run build:shared && bun run build:tools && bun run build:web",
+    "build:shared": "bun run --cwd shared build",
+    "build:tools": "bun run --filter '@libreutils/tool-*' build",
+    "build:web": "bun build ./src/index.ts --outdir ./dist --target browser --minify && cp ./src/index.html ./dist/ && cp -r ./public/* ./dist/",
+    "clean": "rm -rf node_modules shared/node_modules tools/*/node_modules dist shared/dist tools/*/dist",
+    "test": "bun test",
+    "test:unit": "bun test --filter '*.test.ts'",
+    "test:e2e": "bun test --filter '*.e2e.ts'",
+    "lint": "bun run typecheck",
+    "typecheck": "tsc --noEmit",
+    "version:sync": "bun run ./scripts/sync-version.ts",
+    "hooks:install": "bun run ./scripts/install-hooks.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.5",
+    "typescript": "5.9.3"
+  }
+}
