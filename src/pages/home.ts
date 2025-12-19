@@ -12,6 +12,13 @@ const tools: ToolMeta[] = [
     category: 'text',
     keywords: ['base64', 'url', 'encode', 'decode', 'html', 'escape'],
   },
+  {
+    id: 'password-generator',
+    name: 'Password Generator',
+    description: 'Generate secure, cryptographically random passwords with customizable length and character options.',
+    category: 'encryption',
+    keywords: ['password', 'generator', 'secure', 'random', 'strong', 'crypto'],
+  },
 ];
 
 const categories = [
