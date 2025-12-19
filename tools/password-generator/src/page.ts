@@ -471,8 +471,9 @@ function setupEventListeners(container: HTMLElement): void {
   });
 
   copyBtn.addEventListener('click', async () => {
-    const text = passwordText.textContent || '';
-    if (!text || text.includes('Click Generate')) return;
+    const text = (passwordText.textContent || '').trim();
+    const isErrorLike = /error|invalid|failed|unable to generate/i.test(text);
+    if (!text || text.includes('Click Generate') || isErrorLike) return;
 
     try {
       await navigator.clipboard.writeText(text);
