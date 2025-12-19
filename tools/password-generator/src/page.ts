@@ -2,7 +2,7 @@
  * Password Generator Page Component
  */
 
-import { PasswordGenerator, DEFAULT_OPTIONS, type PasswordOptions, type PasswordStrength } from './tool';
+import { PasswordGenerator, type PasswordOptions, type PasswordStrength } from './tool';
 
 export function renderPasswordGeneratorPage(): HTMLElement {
   const container = document.createElement('div');

@@ -57,7 +57,17 @@ export const DEFAULT_OPTIONS: PasswordOptions = {
 };
 
 export class PasswordGenerator {
+    /**
+     * Generates a cryptographically secure password based on the provided options.
+     * @param options Configuration options for password generation
+     * @returns The generated password string
+     * @throws Error if options are invalid (e.g. no char types selected)
+     */
     static generate(options: PasswordOptions = DEFAULT_OPTIONS): string {
+        if (options.length < 4 || options.length > 2048) {
+            throw new Error('Password length must be between 4 and 2048');
+        }
+
         if (options.memorable) {
             return this.generateMemorable(options);
         }
@@ -89,15 +99,17 @@ export class PasswordGenerator {
             throw new Error('No characters available after exclusions');
         }
 
-        const array = new Uint32Array(options.length);
-        crypto.getRandomValues(array);
+        // Array not needed here as we generate per char inside loop using getUnbiasedRandomInt
+        // but for performance refactoring we might want batched generation later.
+        // For now, adhering to strict unbiased generation per char.
 
         let password = '';
         for (let i = 0; i < options.length; i++) {
-            password += charset[array[i] % charset.length];
+            const index = this.getUnbiasedRandomInt(charset.length);
+            password += charset[index];
         }
 
-        password = this.ensureCharacterTypes(password, options, charset);
+        password = this.ensureCharacterTypes(password, options);
 
         return password;
     }
@@ -108,22 +120,18 @@ export class PasswordGenerator {
 
     private static ensureCharacterTypes(
         password: string,
-        options: PasswordOptions,
-        charset: string
+        options: PasswordOptions
     ): string {
         const chars = password.split('');
         const positions = new Set<number>();
 
         const getRandomPosition = (): number => {
-            const array = new Uint32Array(1);
-            crypto.getRandomValues(array);
-            return array[0] % password.length;
+            return this.getUnbiasedRandomInt(password.length);
         };
 
         const getRandomChar = (set: string): string => {
-            const array = new Uint32Array(1);
-            crypto.getRandomValues(array);
-            return set[array[0] % set.length];
+            const index = this.getUnbiasedRandomInt(set.length);
+            return set[index];
         };
 
         const ensureType = (charSet: string): void => {
@@ -143,11 +151,19 @@ export class PasswordGenerator {
             const hasType = chars.some(c => filtered.includes(c));
             if (!hasType) {
                 let pos: number;
+                let attempts = 0;
+                // Prevent infinite loop if we can't find a spot after many tries
+                const maxAttempts = password.length * 3;
+
                 do {
                     pos = getRandomPosition();
-                } while (positions.has(pos));
-                positions.add(pos);
-                chars[pos] = getRandomChar(filtered);
+                    attempts++;
+                } while (positions.has(pos) && attempts < maxAttempts);
+
+                if (attempts < maxAttempts) {
+                    positions.add(pos);
+                    chars[pos] = getRandomChar(filtered);
+                }
             }
         };
 
@@ -159,16 +175,37 @@ export class PasswordGenerator {
         return chars.join('');
     }
 
+    /**
+     * Generates a random integer between 0 (inclusive) and max (exclusive)
+     * using rejection sampling to avoid modulo bias.
+     */
+    private static getUnbiasedRandomInt(max: number): number {
+        if (max <= 0) throw new Error('max must be positive');
+
+        // Determine the largest multiple of max that fits in uint32
+        // We reject any random value >= limit to avoid bias
+        const maxUint32 = 0xFFFFFFFF;
+        const limit = maxUint32 - (maxUint32 % max);
+        const array = new Uint32Array(1);
+
+        let value: number;
+        do {
+            crypto.getRandomValues(array);
+            value = array[0];
+        } while (value >= limit); // Reject values in the biased range
+
+        return value % max;
+    }
+
     private static generateMemorable(options: PasswordOptions): string {
         const words: string[] = [];
         const separator = this.getRandomSeparator();
 
-        let count = Math.max(3, Math.floor(options.length / 6));
+        const count = Math.max(3, Math.floor(options.length / 6));
 
         const getRandomWord = (): string => {
-            const array = new Uint32Array(1);
-            crypto.getRandomValues(array);
-            return WORD_LIST[array[0] % WORD_LIST.length];
+            const index = this.getUnbiasedRandomInt(WORD_LIST.length);
+            return WORD_LIST[index];
         };
 
         for (let i = 0; i < count; i++) {
@@ -182,9 +219,7 @@ export class PasswordGenerator {
         let password = words.join(separator);
 
         if (options.numbers) {
-            const array = new Uint32Array(1);
-            crypto.getRandomValues(array);
-            const num = array[0] % 100;
+            const num = this.getUnbiasedRandomInt(100);
             password = `${num}${separator}${password}`;
         }
 
@@ -197,9 +232,8 @@ export class PasswordGenerator {
 
     private static getRandomSeparator(): string {
         const separators = '-_!@#$%^&*';
-        const array = new Uint32Array(1);
-        crypto.getRandomValues(array);
-        return separators[array[0] % separators.length];
+        const index = this.getUnbiasedRandomInt(separators.length);
+        return separators[index];
     }
 
     static calculateStrength(password: string): PasswordStrength {
@@ -244,7 +278,16 @@ export class PasswordGenerator {
         return { score, label, color, entropy: Math.round(entropy) };
     }
 
+    /**
+     * Generates multiple unique passwords.
+     * @param count Number of passwords to generate
+     * @param options Password generation options
+     * @returns Array of generated passwords
+     */
     static generateMultiple(count: number, options: PasswordOptions = DEFAULT_OPTIONS): string[] {
+        if (count < 1 || count > 1000) {
+            throw new Error('Count must be between 1 and 1000');
+        }
         const passwords: string[] = [];
         for (let i = 0; i < count; i++) {
             passwords.push(this.generate(options));

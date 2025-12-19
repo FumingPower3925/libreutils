@@ -13,6 +13,11 @@ describe('PasswordGenerator', () => {
             expect(password).toHaveLength(16);
         });
 
+        test('throws error for invalid length', () => {
+            expect(() => PasswordGenerator.generate({ ...DEFAULT_OPTIONS, length: 3 })).toThrow('Password length must be between 4 and 2048');
+            expect(() => PasswordGenerator.generate({ ...DEFAULT_OPTIONS, length: 2049 })).toThrow('Password length must be between 4 and 2048');
+        });
+
         test('generates password with only uppercase', () => {
             const options: PasswordOptions = {
                 ...DEFAULT_OPTIONS,
@@ -123,6 +128,11 @@ describe('PasswordGenerator', () => {
             const passwords = PasswordGenerator.generateMultiple(10);
             const uniquePasswords = new Set(passwords);
             expect(uniquePasswords.size).toBe(10);
+        });
+
+        test('throws error for invalid count', () => {
+            expect(() => PasswordGenerator.generateMultiple(0)).toThrow('Count must be between 1 and 1000');
+            expect(() => PasswordGenerator.generateMultiple(1001)).toThrow('Count must be between 1 and 1000');
         });
     });
 
