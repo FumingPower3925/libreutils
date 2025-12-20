@@ -120,11 +120,34 @@ export function renderPasswordGeneratorPage(): HTMLElement {
       .strength-info {
         display: flex;
         justify-content: space-between;
+        align-items: center;
         font-size: var(--lu-text-sm, 0.875rem);
+      }
+
+      .strength-label-container {
+         display: flex;
+         align-items: center;
+         gap: 8px;
       }
 
       .strength-label {
         font-weight: 600;
+      }
+      
+      .quantum-badge {
+        display: none;
+        padding: 2px 6px;
+        background: linear-gradient(135deg, #7c3aed, #ec4899);
+        color: white;
+        font-size: 0.65rem;
+        font-weight: 700;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .quantum-badge.visible {
+        display: inline-block;
       }
 
       .strength-entropy {
@@ -159,6 +182,66 @@ export function renderPasswordGeneratorPage(): HTMLElement {
         width: 20px;
         height: 20px;
       }
+      
+      /* History Section */
+      .history-section {
+        margin-top: var(--lu-space-6, 1.5rem);
+        padding-top: var(--lu-space-4, 1rem);
+        border-top: 1px solid var(--lu-border, #e5e7eb);
+        display: none; /* Hidden when empty */
+      }
+      
+      .history-section.visible {
+        display: block;
+      }
+      
+      .history-title {
+         font-size: var(--lu-text-xs, 0.75rem);
+         text-transform: uppercase;
+         letter-spacing: 0.05em;
+         font-weight: 600;
+         color: var(--lu-text-muted, #9ca3af);
+         margin-bottom: var(--lu-space-3, 0.75rem);
+      }
+      
+      .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: var(--lu-space-2, 0.5rem);
+      }
+      
+      .history-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--lu-bg-secondary, #f3f4f6);
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-family: var(--lu-font-mono, monospace);
+        font-size: 0.85rem;
+        color: var(--lu-text-secondary, #6b7280);
+      }
+      
+      .history-item .hist-pass {
+         overflow: hidden;
+         text-overflow: ellipsis;
+         white-space: nowrap;
+         max-width: 80%;
+      }
+      
+      .history-copy {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--lu-primary-500, #7c3aed);
+        font-size: 0.75rem;
+        font-weight: 500;
+        opacity: 0.7;
+      }
+      .history-copy:hover {
+        opacity: 1;
+        text-decoration: underline;
+      }
 
       .options-panel {
         background: var(--lu-bg-card, white);
@@ -167,10 +250,40 @@ export function renderPasswordGeneratorPage(): HTMLElement {
         padding: var(--lu-space-6, 1.5rem);
       }
 
+      .options-title-row {
+         display: flex;
+         justify-content: space-between;
+         align-items: center;
+         margin-bottom: var(--lu-space-4, 1rem);
+      }
+
       .options-title {
         font-size: var(--lu-text-lg, 1.125rem);
         font-weight: 600;
-        margin-bottom: var(--lu-space-4, 1rem);
+        margin: 0;
+      }
+      
+      /* Presets */
+      .presets {
+        display: flex;
+        gap: 8px;
+      }
+      
+      .preset-btn {
+        background: var(--lu-bg-secondary, #f3f4f6);
+        border: 1px solid transparent;
+        border-radius: 4px;
+        padding: 4px 10px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--lu-text-secondary, #6b7280);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .preset-btn:hover {
+         background: var(--lu-primary-50, #f5f3ff);
+         color: var(--lu-primary-600, #6d28d9);
       }
 
       .option-group {
@@ -213,6 +326,17 @@ export function renderPasswordGeneratorPage(): HTMLElement {
         background: var(--lu-primary-500, #7c3aed);
         cursor: pointer;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      }
+      
+      /* Separator Select */
+      .separator-select {
+        width: 100%;
+        padding: 8px;
+        border-radius: var(--lu-radius-md, 0.5rem);
+        border: 1px solid var(--lu-border, #e5e7eb);
+        background: var(--lu-bg-secondary, #f3f4f6);
+        font-size: 0.9rem;
+        margin-top: 8px;
       }
 
       .checkboxes {
@@ -317,7 +441,10 @@ export function renderPasswordGeneratorPage(): HTMLElement {
         <div class="strength-fill" id="strength-fill" role="progressbar" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0" style="width: 0%; background: #dc2626;"></div>
       </div>
       <div class="strength-info">
-        <span class="strength-label" id="strength-label">-</span>
+        <div class="strength-label-container">
+           <span class="strength-label" id="strength-label">-</span>
+           <span class="quantum-badge" id="quantum-badge" title="Entropy > 256 bits. Resistant to future quantum computing attacks.">Quantum Safe</span>
+        </div>
         <span class="strength-entropy" id="strength-entropy">0 bits entropy</span>
       </div>
       
@@ -328,10 +455,24 @@ export function renderPasswordGeneratorPage(): HTMLElement {
         </svg>
         Generate Password
       </button>
+
+      <div class="history-section" id="history-section">
+         <div class="history-title">Recent Passwords</div>
+         <div class="history-list" id="history-list">
+             <!-- History Items -->
+         </div>
+      </div>
     </div>
 
     <div class="options-panel">
-      <h2 class="options-title">Options</h2>
+      <div class="options-title-row">
+         <h2 class="options-title">Options</h2>
+         <div class="presets">
+             <button class="preset-btn" id="preset-all">All</button>
+             <button class="preset-btn" id="preset-easy">Easy</button>
+             <button class="preset-btn" id="preset-pin">PIN</button>
+         </div>
+      </div>
       
       <div class="option-group">
         <div class="option-label">
@@ -346,9 +487,19 @@ export function renderPasswordGeneratorPage(): HTMLElement {
           <span class="option-label-text">Password Type</span>
         </div>
         <div class="checkboxes">
-           <label class="checkbox-item" style="grid-column: 1 / -1;">
-            <input type="checkbox" id="opt-memorable">
-            <span class="checkbox-label">Memorable (Words)</span>
+           <label class="checkbox-item" style="grid-column: 1 / -1; display:flex; flex-direction: column; align-items: flex-start;">
+            <div style="display:flex; align-items:center; gap: 0.75rem; width:100%;">
+                <input type="checkbox" id="opt-memorable">
+                <span class="checkbox-label">Memorable (Words)</span>
+            </div>
+            
+            <select id="opt-separator" class="separator-select" style="display:none;">
+                <option value="random">Random Separator</option>
+                <option value="-">Hyphen (-)</option>
+                <option value="_">Underscore (_)</option>
+                <option value=" ">Space ( )</option>
+                <option value=".">Period (.)</option>
+            </select>
           </label>
         </div>
       </div>
@@ -403,6 +554,7 @@ function setupEventListeners(container: HTMLElement): void {
   const strengthFill = container.querySelector('#strength-fill') as HTMLDivElement;
   const strengthLabel = container.querySelector('#strength-label') as HTMLSpanElement;
   const strengthEntropy = container.querySelector('#strength-entropy') as HTMLSpanElement;
+  const quantumBadge = container.querySelector('#quantum-badge') as HTMLSpanElement;
   const copyFeedback = container.querySelector('#copy-feedback') as HTMLDivElement;
 
   const optUppercase = container.querySelector('#opt-uppercase') as HTMLInputElement;
@@ -412,15 +564,22 @@ function setupEventListeners(container: HTMLElement): void {
   const optAmbiguous = container.querySelector('#opt-ambiguous') as HTMLInputElement;
 
   const optMemorable = container.querySelector('#opt-memorable') as HTMLInputElement;
+  const optSeparator = container.querySelector('#opt-separator') as HTMLSelectElement;
 
   const charOptions = container.querySelector('#char-options') as HTMLElement;
   const excludeOptions = container.querySelector('#exclude-options') as HTMLElement;
 
-  /*
-   Note: hidden options (like character types when 'memorable' is checked) are still read here.
-   However, the generator's logic ignores irrelevant options for the chosen mode, so this is safe
-   and preserves user state when switching modes.
-   */
+  const presetAll = container.querySelector('#preset-all') as HTMLButtonElement;
+  const presetEasy = container.querySelector('#preset-easy') as HTMLButtonElement;
+  const presetPin = container.querySelector('#preset-pin') as HTMLButtonElement;
+
+  const historyList = container.querySelector('#history-list') as HTMLDivElement;
+  const historySection = container.querySelector('#history-section') as HTMLDivElement;
+
+  // State
+  let passwordHistory: string[] = [];
+  const MAX_HISTORY = 5;
+
   const getOptions = (): PasswordOptions => ({
     length: parseInt(lengthSlider.value, 10),
     uppercase: optUppercase.checked,
@@ -430,6 +589,7 @@ function setupEventListeners(container: HTMLElement): void {
     excludeAmbiguous: optAmbiguous.checked,
     excludeChars: '',
     memorable: optMemorable.checked,
+    separator: optSeparator.value as any, // Cast to match stricter type if needed
   });
 
   const updateStrengthDisplay = (strength: PasswordStrength): void => {
@@ -439,6 +599,60 @@ function setupEventListeners(container: HTMLElement): void {
     strengthLabel.textContent = strength.label;
     strengthLabel.style.color = strength.color;
     strengthEntropy.textContent = `${strength.entropy} bits entropy`;
+
+    if (strength.isQuantumSafe) {
+      quantumBadge.classList.add('visible');
+    } else {
+      quantumBadge.classList.remove('visible');
+    }
+  };
+
+  const addToHistory = (pwd: string) => {
+    // Don't add duplicates consecutively
+    if (passwordHistory.length > 0 && passwordHistory[0] === pwd) return;
+
+    passwordHistory.unshift(pwd);
+    if (passwordHistory.length > MAX_HISTORY) {
+      passwordHistory.pop();
+    }
+    renderHistory();
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      copyFeedback.classList.add('visible');
+      setTimeout(() => copyFeedback.classList.remove('visible'), 2000);
+    } catch {
+      // fallback not essential for history demo but good practice
+    }
+  };
+
+  const renderHistory = () => {
+    if (passwordHistory.length === 0) {
+      historySection.classList.remove('visible');
+      return;
+    }
+    historySection.classList.add('visible');
+    historyList.innerHTML = '';
+
+    passwordHistory.forEach(pwd => {
+      const item = document.createElement('div');
+      item.className = 'history-item';
+
+      const passSpan = document.createElement('span');
+      passSpan.className = 'hist-pass';
+      passSpan.textContent = pwd;
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'history-copy';
+      copyBtn.textContent = 'Copy';
+      copyBtn.onclick = () => copyToClipboard(pwd);
+
+      item.appendChild(passSpan);
+      item.appendChild(copyBtn);
+      historyList.appendChild(item);
+    });
   };
 
   const generatePassword = (): void => {
@@ -449,9 +663,10 @@ function setupEventListeners(container: HTMLElement): void {
 
       passwordText.textContent = password;
       updateStrengthDisplay(strength);
+      addToHistory(password);
     } catch (error) {
       passwordText.textContent = error instanceof Error ? error.message : 'Generation failed';
-      updateStrengthDisplay({ score: 0, label: 'Very Weak', color: '#dc2626', entropy: 0 });
+      updateStrengthDisplay({ score: 0, label: 'Very Weak', color: '#dc2626', entropy: 0, isQuantumSafe: false });
     }
   };
 
@@ -460,6 +675,7 @@ function setupEventListeners(container: HTMLElement): void {
 
     charOptions.style.display = isMemorable ? 'none' : 'block';
     excludeOptions.style.display = isMemorable ? 'none' : 'block';
+    optSeparator.style.display = isMemorable ? 'block' : 'none';
 
     // Disable inputs when hidden to prevent interaction/reading
     const inputs = [optUppercase, optLowercase, optNumbers, optSymbols, optAmbiguous];
@@ -470,6 +686,25 @@ function setupEventListeners(container: HTMLElement): void {
     generatePassword();
   });
 
+  // Preset Handlers
+  const applyPreset = (len: number, mem: boolean, upper: boolean, lower: boolean, nums: boolean, syms: boolean, ambig: boolean) => {
+    lengthSlider.value = len.toString();
+    lengthValue.textContent = len.toString();
+    optMemorable.checked = mem;
+    optUppercase.checked = upper;
+    optLowercase.checked = lower;
+    optNumbers.checked = nums;
+    optSymbols.checked = syms;
+    optAmbiguous.checked = ambig;
+
+    // Trigger update logic
+    optMemorable.dispatchEvent(new Event('change'));
+  };
+
+  presetAll.addEventListener('click', () => applyPreset(16, false, true, true, true, true, false));
+  presetEasy.addEventListener('click', () => applyPreset(16, false, true, true, true, false, true));
+  presetPin.addEventListener('click', () => applyPreset(6, false, false, false, true, false, false));
+
   generateBtn.addEventListener('click', generatePassword);
 
   lengthSlider.addEventListener('input', () => {
@@ -478,7 +713,7 @@ function setupEventListeners(container: HTMLElement): void {
     generatePassword();
   });
 
-  const optionInputs = [optUppercase, optLowercase, optNumbers, optSymbols, optAmbiguous];
+  const optionInputs = [optUppercase, optLowercase, optNumbers, optSymbols, optAmbiguous, optSeparator];
   optionInputs.forEach(input => {
     input.addEventListener('change', generatePassword);
   });
@@ -488,31 +723,18 @@ function setupEventListeners(container: HTMLElement): void {
     const isErrorLike = /error|invalid|failed|unable to generate/i.test(text);
     if (!text || text.includes('Click Generate') || isErrorLike) return;
 
-    try {
-      await navigator.clipboard.writeText(text);
-      copyFeedback.classList.add('visible');
-      setTimeout(() => copyFeedback.classList.remove('visible'), 2000);
-    } catch {
-      try {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        // Intentional fallback: use deprecated execCommand('copy') for older browsers
-        // that do not support navigator.clipboard.writeText.
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        copyFeedback.classList.add('visible');
-        setTimeout(() => copyFeedback.classList.remove('visible'), 2000);
-      } catch {
-        const errorToast = document.createElement('div');
-        errorToast.textContent = 'Failed to copy. Please copy manually.';
-        errorToast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#dc2626;color:white;padding:12px 20px;border-radius:8px;z-index:10000;';
-        document.body.appendChild(errorToast);
-        setTimeout(() => errorToast.remove(), 3000);
-      }
-    }
+    copyToClipboard(text);
   });
 
-  generatePassword();
+  // Initial call - do NOT generate password on load to keep history clean? 
+  // Or generate one but don't add to history?
+  // Let's generate one but clear history
+  try {
+    const options = getOptions();
+    const password = PasswordGenerator.generate(options);
+    const strength = PasswordGenerator.calculateStrength(password, options.memorable);
+    passwordText.textContent = password;
+    updateStrengthDisplay(strength);
+    // Don't add initial to history
+  } catch (e) { }
 }

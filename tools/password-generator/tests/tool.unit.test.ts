@@ -145,6 +145,19 @@ describe('PasswordGenerator', () => {
             const strength = PasswordGenerator.calculateStrength(password);
             expect(strength.label).toBe('Unbreakable');
             expect(strength.score).toBe(6);
+            expect(strength.isQuantumSafe).toBe(true);
+        });
+
+        test('correctly identifies quantum safe passwords', () => {
+            // 256 bits needed. 
+            // Mixed charset (log2(94) = 6.55). 256 / 6.55 = ~39.1 chars.
+            const safe = PasswordGenerator.generate({ ...DEFAULT_OPTIONS, length: 40 });
+            const strengthSafe = PasswordGenerator.calculateStrength(safe);
+            expect(strengthSafe.isQuantumSafe).toBe(true);
+
+            const unsafe = PasswordGenerator.generate({ ...DEFAULT_OPTIONS, length: 20 });
+            const strengthUnsafe = PasswordGenerator.calculateStrength(unsafe);
+            expect(strengthUnsafe.isQuantumSafe).toBe(false);
         });
 
         test('calculates entropy correctly', () => {
@@ -218,6 +231,13 @@ describe('PasswordGenerator', () => {
             // Separators in this mode are only - or _
             // We check that it does NOT contain other symbols like @#$%^&*
             expect(password).not.toMatch(/[!@#$%^&*]/);
+        });
+
+        test('uses specific separator if provided', () => {
+            const options: PasswordOptions = { ...DEFAULT_OPTIONS, memorable: true, length: 50, separator: '_' };
+            const password = PasswordGenerator.generate(options);
+            expect(password).toMatch(/_/);
+            expect(password).not.toMatch(/-/); // Assuming no hyphen in words
         });
     });
 });

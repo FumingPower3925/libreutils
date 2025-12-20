@@ -24,6 +24,8 @@ export interface PasswordOptions {
     excludeChars: string;
     /** Generate a memorable password (words separated by symbols) */
     memorable: boolean;
+    /** Separator for memorable passwords (default: random) */
+    separator?: 'random' | '-' | '_' | ' ' | '.';
 }
 
 export interface PasswordStrength {
@@ -31,6 +33,7 @@ export interface PasswordStrength {
     label: 'Very Weak' | 'Weak' | 'Fair' | 'Strong' | 'Very Strong' | 'Unbreakable';
     color: string;
     entropy: number;
+    isQuantumSafe: boolean;
 }
 
 
@@ -43,6 +46,7 @@ export const DEFAULT_OPTIONS: PasswordOptions = {
     excludeAmbiguous: false,
     excludeChars: '',
     memorable: false,
+    separator: 'random',
 };
 
 export class PasswordGenerator {
@@ -190,7 +194,11 @@ export class PasswordGenerator {
 
     private static generateMemorable(options: PasswordOptions): string {
         const words: string[] = [];
-        const separator = this.getRandomSeparator(options.symbols);
+        let separator: string = options.separator || 'random';
+
+        if (separator === 'random') {
+            separator = this.getRandomSeparator(options.symbols);
+        }
         const separatorLen = separator.length;
 
         let currentLength = 0;
@@ -268,7 +276,7 @@ export class PasswordGenerator {
 
     static calculateStrength(password: string, isMemorable: boolean = false): PasswordStrength {
         if (!password) {
-            return { score: 0, label: 'Very Weak', color: '#dc2626', entropy: 0 };
+            return { score: 0, label: 'Very Weak', color: '#dc2626', entropy: 0, isQuantumSafe: false };
         }
 
         let charsetSize = 0;
@@ -296,11 +304,14 @@ export class PasswordGenerator {
             entropy = dictEntropy;
         }
 
+        const isQuantumSafe = entropy >= 256;
+
         return {
             score: this.getStrengthScore(entropy),
             label: this.getStrengthLabel(entropy),
             color: this.getStrengthColor(entropy),
             entropy: Math.round(entropy),
+            isQuantumSafe
         };
     }
 
