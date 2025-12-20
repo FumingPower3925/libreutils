@@ -445,7 +445,7 @@ function setupEventListeners(container: HTMLElement): void {
     try {
       const options = getOptions();
       const password = PasswordGenerator.generate(options);
-      const strength = PasswordGenerator.calculateStrength(password);
+      const strength = PasswordGenerator.calculateStrength(password, options.memorable);
 
       passwordText.textContent = password;
       updateStrengthDisplay(strength);

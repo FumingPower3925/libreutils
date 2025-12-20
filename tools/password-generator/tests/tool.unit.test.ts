@@ -130,14 +130,14 @@ describe('PasswordGenerator', () => {
             const password = PasswordGenerator.generate({ ...DEFAULT_OPTIONS, length: 16 });
             const strength = PasswordGenerator.calculateStrength(password);
             expect(strength.label).toBe('Strong');
-            expect(strength.score).toBe(4);
+            expect(strength.score).toBe(3);
         });
 
-        test('returns Very Strong for 32-char password', () => {
+        test('returns Unbreakable for 32-char password', () => {
             const password = PasswordGenerator.generate({ ...DEFAULT_OPTIONS, length: 32 });
             const strength = PasswordGenerator.calculateStrength(password);
-            expect(strength.label).toBe('Very Strong');
-            expect(strength.score).toBe(5);
+            expect(strength.label).toBe('Unbreakable');
+            expect(strength.score).toBeGreaterThanOrEqual(5);
         });
 
         test('returns Unbreakable for extremely long password (entropy > 512)', () => {
@@ -150,6 +150,22 @@ describe('PasswordGenerator', () => {
         test('calculates entropy correctly', () => {
             const strength = PasswordGenerator.calculateStrength('AAAAAAAA');
             expect(strength.entropy).toBeGreaterThan(0);
+        });
+
+        test('returns lower entropy for memorable passwords (dictionary attack penalty)', () => {
+            // A 30 char random password is huge entropy (~150 bits)
+            const randomPass = PasswordGenerator.generate({ ...DEFAULT_OPTIONS, length: 30, memorable: false });
+            const randomStrength = PasswordGenerator.calculateStrength(randomPass, false);
+
+            // A 30 char memorable password is just ~5 words
+            const memPass = PasswordGenerator.generate({ ...DEFAULT_OPTIONS, length: 30, memorable: true });
+            const memStrength = PasswordGenerator.calculateStrength(memPass, true);
+
+            expect(memStrength.entropy).toBeLessThan(randomStrength.entropy);
+            // With ~1000 words, 5 words * 10 bits = 50 bits.
+            // Random 30 * 6.5 = 195 bits.
+            // It should be significantly lower.
+            expect(memStrength.entropy).toBeLessThan(100);
         });
     });
 

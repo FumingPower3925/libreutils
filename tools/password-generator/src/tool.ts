@@ -1,3 +1,6 @@
+import { AMBIGUOUS, UPPERCASE, LOWERCASE, NUMBERS, SYMBOLS } from './constants';
+import { WORD_LIST } from './wordlist';
+
 export interface PasswordOptions {
     /** Length of the generated password (4-2048) */
     length: number;
@@ -24,34 +27,6 @@ export interface PasswordStrength {
     entropy: number;
 }
 
-const UPPERCASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz';
-const NUMBERS = '0123456789';
-const SYMBOLS = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-const AMBIGUOUS = 'Il1O0';
-
-const WORD_LIST = [
-    'apple', 'arrow', 'beach', 'berry', 'bird', 'blade', 'blaze', 'bloom', 'blue', 'bolt',
-    'brave', 'bread', 'brick', 'bridge', 'bright', 'brook', 'butter', 'cabin', 'cake', 'calm',
-    'candy', 'cargo', 'castle', 'cedar', 'chain', 'chalk', 'charm', 'chase', 'chess', 'chill',
-    'cliff', 'cloud', 'clover', 'coast', 'coral', 'cozy', 'crane', 'crisp', 'crown', 'crystal',
-    'dance', 'dawn', 'delta', 'dream', 'drift', 'eagle', 'earth', 'echo', 'ember', 'fable',
-    'falcon', 'field', 'flame', 'flash', 'fleet', 'flint', 'flora', 'forge', 'fox', 'frost',
-    'garden', 'gem', 'ghost', 'glade', 'gleam', 'globe', 'glory', 'gold', 'grape', 'green',
-    'grove', 'guide', 'halo', 'harbor', 'hawk', 'heart', 'hearth', 'hedge', 'hero', 'honey',
-    'hope', 'horse', 'ice', 'iron', 'island', 'ivy', 'jade', 'jazz', 'jewel', 'jungle',
-    'karma', 'kite', 'lake', 'lamp', 'lark', 'lemon', 'light', 'lily', 'lion', 'lotus',
-    'lunar', 'magic', 'maple', 'marble', 'meadow', 'mist', 'moon', 'moss', 'mountain', 'nest',
-    'noble', 'north', 'oak', 'ocean', 'olive', 'onyx', 'opal', 'orbit', 'orchid', 'owl',
-    'palm', 'paper', 'path', 'pearl', 'pebble', 'pepper', 'pine', 'pixel', 'plain', 'planet',
-    'plaza', 'plum', 'pond', 'prism', 'pulse', 'quartz', 'quest', 'quiet', 'rain', 'raven',
-    'realm', 'reef', 'ridge', 'river', 'robin', 'rock', 'rose', 'ruby', 'sage', 'sail',
-    'sand', 'sapphire', 'shade', 'shadow', 'shell', 'shine', 'silver', 'sky', 'slate', 'snow',
-    'solar', 'song', 'spark', 'spice', 'spirit', 'spring', 'spruce', 'star', 'steam', 'steel',
-    'stone', 'storm', 'stream', 'summit', 'sun', 'swift', 'temple', 'thistle', 'thunder', 'tide',
-    'tiger', 'tower', 'trail', 'tree', 'tulip', 'twilight', 'valley', 'velvet', 'vine', 'violet',
-    'wave', 'wheat', 'willow', 'wind', 'winter', 'wolf', 'wonder', 'wood', 'yarn', 'zenith'
-];
 
 export const DEFAULT_OPTIONS: PasswordOptions = {
     length: 16,
@@ -140,10 +115,6 @@ export class PasswordGenerator {
         const chars = password.split('');
         const positions = new Set<number>();
 
-        const getRandomPosition = (): number => {
-            return this.getUnbiasedRandomInt(password.length);
-        };
-
         const getRandomChar = (set: string): string => {
             const index = this.getUnbiasedRandomInt(set.length);
             return set[index];
@@ -214,22 +185,59 @@ export class PasswordGenerator {
     private static generateMemorable(options: PasswordOptions): string {
         const words: string[] = [];
         const separator = this.getRandomSeparator(options.symbols);
+        const separatorLen = separator.length;
 
-        // Calculate count accounting for average word length (5) + separator (1)
-        // Ensure at least 2 words if length permits
-        const count = Math.max(2, Math.floor(options.length / 6));
+        let currentLength = 0;
+        const targetLength = options.length;
 
-        const getRandomWord = (): string => {
-            const index = this.getUnbiasedRandomInt(WORD_LIST.length);
-            return WORD_LIST[index];
+        // Group words by length for O(1) access
+        const wordsByLength: { [key: number]: string[] } = {};
+        for (const word of WORD_LIST) {
+            const len = word.length;
+            if (!wordsByLength[len]) wordsByLength[len] = [];
+            wordsByLength[len].push(word);
+        }
+
+        const getRandomWord = (len?: number): string => {
+            let candidates = WORD_LIST;
+            if (len !== undefined) {
+                if (wordsByLength[len] && wordsByLength[len].length > 0) {
+                    candidates = wordsByLength[len];
+                } else {
+                    // Fallback: anything that fits
+                    candidates = WORD_LIST.filter(w => w.length <= len);
+                    if (candidates.length === 0) candidates = WORD_LIST; // Last resort
+                }
+            }
+            const index = this.getUnbiasedRandomInt(candidates.length);
+            return candidates[index];
         };
 
-        for (let i = 0; i < count; i++) {
-            let word = getRandomWord();
-            if (options.uppercase) {
-                word = word.charAt(0).toUpperCase() + word.slice(1);
+        while (currentLength < targetLength) {
+            const isFirst = words.length === 0;
+            const overhead = isFirst ? 0 : separatorLen;
+            const remaining = targetLength - currentLength - overhead;
+
+            if (remaining <= 0) break;
+
+            let selectedWord = '';
+
+            // If we are close to the end, try to find an exact fit
+            if (remaining <= 10) {
+                selectedWord = getRandomWord(remaining);
+            } else {
+                selectedWord = getRandomWord();
             }
-            words.push(word);
+
+            // Transform case
+            if (options.uppercase) {
+                selectedWord = selectedWord.charAt(0).toUpperCase() + selectedWord.slice(1);
+            }
+
+            words.push(selectedWord);
+            currentLength += selectedWord.length + overhead;
+
+            if (currentLength >= targetLength) break;
         }
 
         let password = words.join(separator);
@@ -240,16 +248,7 @@ export class PasswordGenerator {
         }
 
         if (password.length > options.length) {
-            // Prefer removing complete word segments before falling back to character-level truncation.
-            const parts = password.split(separator);
-            while (parts.length > 1 && parts.join(separator).length > options.length) {
-                parts.pop();
-            }
-            password = parts.join(separator);
-            // As a last resort, hard-truncate if still too long
-            if (password.length > options.length) {
-                password = password.slice(0, options.length);
-            }
+            password = password.slice(0, options.length);
         }
 
         return password;
@@ -261,7 +260,7 @@ export class PasswordGenerator {
         return separators[index];
     }
 
-    static calculateStrength(password: string): PasswordStrength {
+    static calculateStrength(password: string, isMemorable: boolean = false): PasswordStrength {
         if (!password) {
             return { score: 0, label: 'Very Weak', color: '#dc2626', entropy: 0 };
         }
@@ -272,39 +271,59 @@ export class PasswordGenerator {
         if (/[0-9]/.test(password)) charsetSize += 10;
         if (/[^a-zA-Z0-9]/.test(password)) charsetSize += 32;
 
-        const entropy = password.length * Math.log2(charsetSize || 1);
+        if (charsetSize === 0) charsetSize = 1; // Fallback
 
-        let score: number;
-        let label: PasswordStrength['label'];
-        let color: string;
+        // Standard entropy
+        let entropy = password.length * Math.log2(charsetSize);
 
-        if (entropy < 28) {
-            score = 1;
-            label = 'Very Weak';
-            color = '#dc2626';
-        } else if (entropy < 36) {
-            score = 2;
-            label = 'Weak';
-            color = '#f97316';
-        } else if (entropy < 60) {
-            score = 3;
-            label = 'Fair';
-            color = '#eab308';
-        } else if (entropy < 128) {
-            score = 4;
-            label = 'Strong';
-            color = '#22c55e';
-        } else if (entropy < 512) {
-            score = 5;
-            label = 'Very Strong';
-            color = '#16a34a';
-        } else {
-            score = 6;
-            label = 'Unbreakable';
-            color = '#7c3aed';
+        if (isMemorable) {
+            // 1. Estimate number of words.
+            // Average word length ~5.5, separator ~1.
+            // Assume numbers added (~2 chars).
+            const estimatedWords = Math.max(1, password.length / 6.5);
+
+            // 2. Entropy = num_words * log2(dictionary_size) + padding_entropy
+            // Dictionary size is WORD_LIST.length
+            const dictEntropy = estimatedWords * Math.log2(WORD_LIST.length);
+
+            // Conservative estimate: use dictEntropy
+            entropy = dictEntropy;
         }
 
-        return { score, label, color, entropy: Math.round(entropy) };
+        return {
+            score: this.getStrengthScore(entropy),
+            label: this.getStrengthLabel(entropy),
+            color: this.getStrengthColor(entropy),
+            entropy: Math.round(entropy),
+        };
+    }
+
+    private static getStrengthScore(entropy: number): number {
+        if (entropy < 28) return 0;
+        if (entropy < 36) return 1;
+        if (entropy < 60) return 2;
+        if (entropy < 128) return 3;
+        if (entropy < 185) return 4;
+        if (entropy < 512) return 5;
+        return 6;
+    }
+
+    private static getStrengthLabel(entropy: number): PasswordStrength['label'] {
+        if (entropy < 28) return 'Very Weak';
+        if (entropy < 36) return 'Weak';
+        if (entropy < 60) return 'Fair';
+        if (entropy < 128) return 'Strong';
+        if (entropy < 185) return 'Very Strong';
+        return 'Unbreakable';
+    }
+
+    private static getStrengthColor(entropy: number): string {
+        if (entropy < 28) return '#dc2626';
+        if (entropy < 36) return '#ea580c'; // Orange-Red
+        if (entropy < 60) return '#eab308'; // Yellow
+        if (entropy < 128) return '#16a34a'; // Green
+        if (entropy < 185) return '#059669'; // Emerald
+        return '#7c3aed'; // Purple
     }
 
     /**
