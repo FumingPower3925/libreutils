@@ -646,7 +646,7 @@ function setupEventListeners(container: HTMLElement): void {
   const historyHeader = container.querySelector('#history-header') as HTMLButtonElement;
 
   // State
-  let passwordHistory: string[] = [];
+  const passwordHistory: string[] = [];
   const MAX_HISTORY = 5;
 
   const getOptions = (): PasswordOptions => ({
@@ -827,5 +827,5 @@ function setupEventListeners(container: HTMLElement): void {
     passwordText.textContent = password;
     updateStrengthDisplay(strength);
     // Don't add initial to history
-  } catch (e) { }
+  } catch { }
 }

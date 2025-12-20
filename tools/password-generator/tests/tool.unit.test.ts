@@ -149,7 +149,7 @@ describe('PasswordGenerator', () => {
         });
 
         test('correctly identifies quantum safe passwords', () => {
-            // 256 bits needed. 
+            // 256 bits needed
             // Mixed charset (log2(94) = 6.55). 256 / 6.55 = ~39.1 chars.
             const safe = PasswordGenerator.generate({ ...DEFAULT_OPTIONS, length: 40 });
             const strengthSafe = PasswordGenerator.calculateStrength(safe);
