@@ -166,7 +166,7 @@ export function renderAboutPage(): HTMLElement {
       <div class="section-content">
         <p>
           LibreUtils provides a collection of useful web tools that prioritize your privacy above all else. 
-          Every tool runs entirely in your browser—your data never touches our servers because there are no servers involved in processing your data.
+          Every tool runs entirely in your browser—your data never touches our servers because there are no servers involved in processing your data to begin with!
         </p>
         <p>
           We believe that utility tools should be free, open-source, and respect user privacy. 

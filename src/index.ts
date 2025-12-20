@@ -5,6 +5,7 @@ import { renderHomePage } from './pages/home';
 import { renderAboutPage } from './pages/about';
 import { renderNotFoundPage } from './pages/not-found';
 import { renderTextEncoderPage } from '../tools/text-encoder/src/page';
+import { renderPasswordGeneratorPage } from '../tools/password-generator/src/page';
 
 function initTheme(): void {
     const stored = localStorage.getItem('lu-theme');
@@ -112,6 +113,7 @@ const routes: Route[] = [
     { path: '/', title: 'Home', render: renderHomePage },
     { path: '/about', title: 'About', render: renderAboutPage },
     { path: '/tools/text-encoder', title: 'Text Encoder / Decoder', render: renderTextEncoderPage },
+    { path: '/tools/password-generator', title: 'Password Generator', render: renderPasswordGeneratorPage },
 ];
 
 function init(): void {

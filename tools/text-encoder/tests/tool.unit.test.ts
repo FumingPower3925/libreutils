@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { TextEncoderTool, ENCODING_OPTIONS, type EncodingType } from './tool';
+import { TextEncoderTool, ENCODING_OPTIONS, type EncodingType } from '../src/tool';
 
 describe('TextEncoderTool', () => {
     describe('encode', () => {
