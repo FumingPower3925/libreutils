@@ -11,6 +11,7 @@ export { LuLayout } from './components/Layout';
 export { LuHeader } from './components/Header';
 export { LuFooter } from './components/Footer';
 export { LuCard } from './components/Card';
+export { LuCopyToClipboard } from './components/CopyToClipboard';
 
 // Utilities
 export { registerComponents } from './utils/register';
