@@ -27,9 +27,9 @@ export function createRouter(options: RouterOptions): Router {
         // Find new route
         const route = routes.find(r => r.path === path);
 
-        // Execute cleanup for previous route if it exists and differs from new route (or even if same to be safe?)
-        // Usually onLeave is strict transition.
-        if (currentRoute && currentRoute.onLeave && currentRoute !== route) {
+        // Execute cleanup for previous route if it exists.
+        // We run this even if navigating to the same route to ensure data is wiped on reload/re-entry.
+        if (currentRoute && currentRoute.onLeave) {
             try {
                 currentRoute.onLeave();
             } catch (error) {

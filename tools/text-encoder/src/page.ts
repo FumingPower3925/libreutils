@@ -405,7 +405,10 @@ let cleanupHook: (() => void) | null = null;
 
 export function secureCleanup(): void {
   if (cleanupHook) {
-    cleanupHook();
-    cleanupHook = null;
+    try {
+      cleanupHook();
+    } finally {
+      cleanupHook = null;
+    }
   }
 }
