@@ -26,6 +26,11 @@ export interface PasswordOptions {
     memorable: boolean;
     /** Separator for memorable passwords (default: random) */
     separator?: 'random' | '-' | '_' | ' ' | '.';
+    /** Static string to insert into the password */
+    staticString?: {
+        value: string;
+        position: 'start' | 'middle' | 'end';
+    };
 }
 
 export interface PasswordStrength {
@@ -61,10 +66,42 @@ export class PasswordGenerator {
             throw new Error('Password length must be between 4 and 2048');
         }
 
-        if (options.memorable) {
-            return this.generateMemorable(options);
+        // Handle static string length adjustment
+        const staticStr = options.staticString?.value || '';
+        const staticPos = options.staticString?.position || 'end';
+
+        // If static string takes up entire length or more, return it (truncated if needed)
+        if (staticStr.length >= options.length) {
+            return staticStr.slice(0, options.length);
         }
 
+        // The length we need to generate randomly
+        const randomLength = options.length - staticStr.length;
+
+        // Create temporary options for random generation
+        const randomOptions = { ...options, length: randomLength };
+
+        let generatedPart = '';
+        if (options.memorable) {
+            // Memorable generation might produce slightly different length due to words
+            // Pass specific target length
+            generatedPart = this.generateMemorable(randomOptions);
+        } else {
+            generatedPart = this.generateRandom(randomOptions);
+        }
+
+        // Combine static string and generated part
+        if (staticPos === 'start') {
+            return staticStr + generatedPart;
+        } else if (staticPos === 'end') {
+            return generatedPart + staticStr;
+        } else { // middle
+            const mid = Math.floor(generatedPart.length / 2);
+            return generatedPart.slice(0, mid) + staticStr + generatedPart.slice(mid);
+        }
+    }
+
+    private static generateRandom(options: PasswordOptions): string {
         let charset = '';
 
         if (options.uppercase) charset += UPPERCASE;
@@ -274,8 +311,17 @@ export class PasswordGenerator {
         return separators[index];
     }
 
-    static calculateStrength(password: string, isMemorable: boolean = false): PasswordStrength {
+    static calculateStrength(password: string, isMemorable: boolean = false, staticStringLength: number = 0): PasswordStrength {
         if (!password) {
+            return { score: 0, label: 'Very Weak', color: '#dc2626', entropy: 0, isQuantumSafe: false };
+        }
+
+        // Adjust length for entropy calculation
+        // The effective length is the part that was randomly generated
+        // We use Math.max to prevent negative length if for some reason static string > password
+        const effectiveLength = Math.max(0, password.length - staticStringLength);
+
+        if (effectiveLength === 0) {
             return { score: 0, label: 'Very Weak', color: '#dc2626', entropy: 0, isQuantumSafe: false };
         }
 
@@ -288,13 +334,14 @@ export class PasswordGenerator {
         if (charsetSize === 0) charsetSize = 1; // Fallback
 
         // Standard entropy
-        let entropy = password.length * Math.log2(charsetSize);
+        let entropy = effectiveLength * Math.log2(charsetSize);
 
         if (isMemorable) {
             // 1. Estimate number of words.
             // Average word length ~5.5, separator ~1.
             // Assume numbers added (~2 chars).
-            const estimatedWords = Math.max(1, password.length / 6.5);
+            // Uses effectiveLength because static string adds no entropy to the words combination
+            const estimatedWords = Math.max(1, effectiveLength / 6.5);
 
             // 2. Entropy = num_words * log2(dictionary_size) + padding_entropy
             // Dictionary size is WORD_LIST.length

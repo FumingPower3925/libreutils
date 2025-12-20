@@ -240,4 +240,70 @@ describe('PasswordGenerator', () => {
             expect(password).not.toMatch(/-/); // Assuming no hyphen in words
         });
     });
+
+    describe('Static Strings', () => {
+        test('inserts static string at start', () => {
+            const options: PasswordOptions = {
+                ...DEFAULT_OPTIONS, length: 10,
+                staticString: { value: 'START', position: 'start' }
+            };
+            const password = PasswordGenerator.generate(options);
+            expect(password.startsWith('START')).toBe(true);
+            expect(password).toHaveLength(10);
+        });
+
+        test('inserts static string at end', () => {
+            const options: PasswordOptions = {
+                ...DEFAULT_OPTIONS, length: 12,
+                staticString: { value: 'END', position: 'end' }
+            };
+            const password = PasswordGenerator.generate(options);
+            expect(password.endsWith('END')).toBe(true);
+            expect(password).toHaveLength(12);
+        });
+
+        test('inserts static string in middle', () => {
+            const options: PasswordOptions = {
+                ...DEFAULT_OPTIONS, length: 11, // 5 + 'MID' + 3
+                staticString: { value: 'MID', position: 'middle' }
+            };
+            const password = PasswordGenerator.generate(options);
+            expect(password).toContain('MID');
+            expect(password).toHaveLength(11);
+            // Should be roughly centered
+            const index = password.indexOf('MID');
+            expect(index).toBeGreaterThan(0);
+            expect(index).toBeLessThan(password.length - 3);
+        });
+
+        test('handles static string longer than length', () => {
+            const options: PasswordOptions = {
+                ...DEFAULT_OPTIONS, length: 4,
+                staticString: { value: 'LONGSTRING', position: 'start' }
+            };
+            const password = PasswordGenerator.generate(options);
+            expect(password).toBe('LONG');
+            expect(password).toHaveLength(4);
+        });
+
+        test('calculates entropy considering static string', () => {
+            // Password length 16. Static "FIXED" (5 chars).
+            // Logic: Effective length = 11.
+            const staticStr = 'FIXED';
+            const passWithStatic = PasswordGenerator.generate({
+                ...DEFAULT_OPTIONS, length: 16,
+                staticString: { value: staticStr, position: 'start' }
+            });
+
+            // Random pass of length 11
+            const passRandom11 = PasswordGenerator.generate({ ...DEFAULT_OPTIONS, length: 11 });
+
+            const strengthStatic = PasswordGenerator.calculateStrength(passWithStatic, false, staticStr.length);
+            const strengthRandom = PasswordGenerator.calculateStrength(passRandom11, false);
+
+            // Entropies should be roughly equal (same length of randomness)
+            const diff = Math.abs(strengthStatic.entropy - strengthRandom.entropy);
+            expect(diff).toBeLessThan(5); // Allowance for charset variations
+        });
+    });
 });

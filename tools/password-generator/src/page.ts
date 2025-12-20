@@ -365,8 +365,28 @@ export function renderPasswordGeneratorPage(): HTMLElement {
         border-radius: var(--lu-radius-md, 0.5rem);
         border: 1px solid var(--lu-border, #e5e7eb);
         background: var(--lu-bg-secondary, #f3f4f6);
+        color: var(--lu-text-primary, #111827); /* Explicit color for dark mode */
         font-size: 0.9rem;
         margin-top: 8px;
+      }
+      
+      .static-input,
+      .static-select {
+        padding: 8px;
+        border-radius: var(--lu-radius-md, 0.5rem);
+        border: 1px solid var(--lu-border, #e5e7eb);
+        background: var(--lu-bg-secondary, #f3f4f6);
+        color: var(--lu-text-primary, #111827);
+        font-size: 0.85rem;
+      }
+      
+      .static-input {
+         flex: 2;
+         min-width: 0; /* Allow shrinking */
+      }
+      
+      .static-select {
+         flex: 1;
       }
 
       .checkboxes {
@@ -570,6 +590,15 @@ export function renderPasswordGeneratorPage(): HTMLElement {
             <input type="checkbox" id="opt-ambiguous">
             <span class="checkbox-label">Exclude Ambiguous (Il1O0)</span>
           </label>
+          
+          <div style="display: flex; gap: 8px; align-items: center;">
+             <input type="text" id="opt-static-string" class="static-input" placeholder="Static text..." aria-label="Static text to include">
+             <select id="opt-static-pos" class="static-select" aria-label="Static text position">
+                 <option value="start">Start</option>
+                 <option value="middle">Middle</option>
+                 <option value="end" selected>End</option>
+             </select>
+          </div>
         </div>
       </div>
     </div>
@@ -602,6 +631,9 @@ function setupEventListeners(container: HTMLElement): void {
   const optMemorable = container.querySelector('#opt-memorable') as HTMLInputElement;
   const optSeparator = container.querySelector('#opt-separator') as HTMLSelectElement;
 
+  const optStaticString = container.querySelector('#opt-static-string') as HTMLInputElement;
+  const optStaticPos = container.querySelector('#opt-static-pos') as HTMLSelectElement;
+
   const charOptions = container.querySelector('#char-options') as HTMLElement;
   const excludeOptions = container.querySelector('#exclude-options') as HTMLElement;
 
@@ -627,6 +659,10 @@ function setupEventListeners(container: HTMLElement): void {
     excludeChars: '',
     memorable: optMemorable.checked,
     separator: optSeparator.value as any, // Cast to match stricter type if needed
+    staticString: optStaticString.value ? {
+      value: optStaticString.value,
+      position: optStaticPos.value as any
+    } : undefined
   });
 
   const updateStrengthDisplay = (strength: PasswordStrength): void => {
@@ -710,7 +746,9 @@ function setupEventListeners(container: HTMLElement): void {
     try {
       const options = getOptions();
       const password = PasswordGenerator.generate(options);
-      const strength = PasswordGenerator.calculateStrength(password, options.memorable);
+      // Adjust strength calculation by passing static string length 
+      const staticLen = options.staticString ? options.staticString.value.length : 0;
+      const strength = PasswordGenerator.calculateStrength(password, options.memorable, staticLen);
 
       passwordText.textContent = password;
       updateStrengthDisplay(strength);
@@ -764,6 +802,9 @@ function setupEventListeners(container: HTMLElement): void {
     generatePassword();
   });
 
+  optStaticString.addEventListener('input', generatePassword);
+  optStaticPos.addEventListener('change', generatePassword);
+
   const optionInputs = [optUppercase, optLowercase, optNumbers, optSymbols, optAmbiguous, optSeparator];
   optionInputs.forEach(input => {
     input.addEventListener('change', generatePassword);
@@ -781,7 +822,8 @@ function setupEventListeners(container: HTMLElement): void {
   try {
     const options = getOptions();
     const password = PasswordGenerator.generate(options);
-    const strength = PasswordGenerator.calculateStrength(password, options.memorable);
+    const staticLen = options.staticString ? options.staticString.value.length : 0;
+    const strength = PasswordGenerator.calculateStrength(password, options.memorable, staticLen);
     passwordText.textContent = password;
     updateStrengthDisplay(strength);
     // Don't add initial to history
