@@ -651,9 +651,9 @@ function setupEventListeners(container: HTMLElement): void {
 
   // Register cleanup hook
   cleanupHook = () => {
-    passwordHistory.fill('');
     passwordHistory.length = 0;
     if (passwordText) passwordText.textContent = '';
+    if (optStaticString) optStaticString.value = '';
   };
 
   const getOptions = (): PasswordOptions => ({
