@@ -592,8 +592,8 @@ export function renderPasswordGeneratorPage(): HTMLElement {
           </label>
           
           <div style="display: flex; gap: 8px; align-items: center;">
-             <input type="text" id="opt-static-string" class="static-input" placeholder="Static text..." aria-label="Static text to include">
-             <select id="opt-static-pos" class="static-select" aria-label="Static text position">
+             <input type="text" id="opt-static-string" class="static-input" placeholder="Static text..." aria-label="Static text to include" autocomplete="off" data-lpignore="true">
+             <select id="opt-static-pos" class="static-select" aria-label="Static text position" autocomplete="off">
                  <option value="start">Start</option>
                  <option value="middle">Middle</option>
                  <option value="end" selected>End</option>
@@ -648,6 +648,16 @@ function setupEventListeners(container: HTMLElement): void {
   // State
   const passwordHistory: string[] = [];
   const MAX_HISTORY = 5;
+
+  // Register cleanup hook
+  cleanupHook = () => {
+    // Explicitly wipe history
+    passwordHistory.fill(''); // Overwrite data if possible (strings are immutable in JS but we can clear the array)
+    passwordHistory.length = 0;
+
+    // Clear display
+    if (passwordText) passwordText.textContent = '';
+  };
 
   const getOptions = (): PasswordOptions => ({
     length: parseInt(lengthSlider.value, 10),
@@ -828,4 +838,13 @@ function setupEventListeners(container: HTMLElement): void {
     updateStrengthDisplay(strength);
     // Don't add initial to history
   } catch { }
+}
+
+let cleanupHook: (() => void) | null = null;
+
+export function secureCleanup(): void {
+  if (cleanupHook) {
+    cleanupHook();
+    cleanupHook = null;
+  }
 }

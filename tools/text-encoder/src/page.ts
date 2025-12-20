@@ -290,7 +290,7 @@ export function renderTextEncoderPage(): HTMLElement {
           <h2 class="panel-title">Input</h2>
           <span class="char-count" id="input-count">0 characters</span>
         </div>
-        <textarea class="text-area" id="input-text" placeholder="Enter text to encode or decode..."></textarea>
+        <textarea class="text-area" id="input-text" placeholder="Enter text to encode or decode..." autocomplete="off" data-lpignore="true"></textarea>
       </div>
       
       <div class="panel">
@@ -298,7 +298,7 @@ export function renderTextEncoderPage(): HTMLElement {
           <h2 class="panel-title">Output</h2>
           <span class="char-count" id="output-count">0 characters</span>
         </div>
-        <textarea class="text-area" id="output-text" placeholder="Result will appear here..." readonly></textarea>
+        <textarea class="text-area" id="output-text" placeholder="Result will appear here..." readonly autocomplete="off" data-lpignore="true"></textarea>
         <button class="btn btn-secondary" id="copy-btn" style="margin-top: var(--lu-space-3, 0.75rem); width: 100%;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
@@ -329,6 +329,11 @@ function setupEventListeners(container: HTMLElement): void {
   const outputCount = container.querySelector('#output-count') as HTMLSpanElement;
   const errorMessage = container.querySelector('#error-message') as HTMLDivElement;
   const copyFeedback = container.querySelector('#copy-feedback') as HTMLDivElement;
+
+  cleanupHook = () => {
+    inputText.value = '';
+    outputText.value = '';
+  };
 
   // Update character counts
   const updateCounts = (): void => {
@@ -394,4 +399,13 @@ function setupEventListeners(container: HTMLElement): void {
       }
     }
   });
+}
+
+let cleanupHook: (() => void) | null = null;
+
+export function secureCleanup(): void {
+  if (cleanupHook) {
+    cleanupHook();
+    cleanupHook = null;
+  }
 }
