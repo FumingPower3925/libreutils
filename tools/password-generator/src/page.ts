@@ -651,11 +651,8 @@ function setupEventListeners(container: HTMLElement): void {
 
   // Register cleanup hook
   cleanupHook = () => {
-    // Explicitly wipe history
-    passwordHistory.fill(''); // Overwrite data if possible (strings are immutable in JS but we can clear the array)
+    passwordHistory.fill('');
     passwordHistory.length = 0;
-
-    // Clear display
     if (passwordText) passwordText.textContent = '';
   };
 
@@ -756,7 +753,6 @@ function setupEventListeners(container: HTMLElement): void {
     try {
       const options = getOptions();
       const password = PasswordGenerator.generate(options);
-      // Adjust strength calculation by passing static string length 
       const staticLen = options.staticString ? options.staticString.value.length : 0;
       const strength = PasswordGenerator.calculateStrength(password, options.memorable, staticLen);
 
