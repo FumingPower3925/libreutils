@@ -658,10 +658,10 @@ function setupEventListeners(container: HTMLElement): void {
     excludeAmbiguous: optAmbiguous.checked,
     excludeChars: '',
     memorable: optMemorable.checked,
-    separator: optSeparator.value as any, // Cast to match stricter type if needed
+    separator: optSeparator.value as PasswordOptions['separator'],
     staticString: optStaticString.value ? {
       value: optStaticString.value,
-      position: optStaticPos.value as any
+      position: optStaticPos.value as 'start' | 'middle' | 'end'
     } : undefined
   });
 
