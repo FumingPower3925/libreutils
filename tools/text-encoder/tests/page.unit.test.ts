@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll, afterAll, mock } from 'bun:test';
+import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
 import { renderTextEncoderPage, secureCleanup } from '../src/page';
 
 // Mock DOM interfaces
@@ -20,9 +20,9 @@ class MockHTMLElement {
         this.tagName = tagName.toUpperCase();
     }
 
-    getAttribute(name: string) { return null; }
-    setAttribute(name: string, value: string) { }
-    querySelector(selector: string) { return new MockHTMLElement(); }
+    getAttribute(_name: string) { return null; }
+    setAttribute(_name: string, _value: string) { void _name; void _value; }
+    querySelector(_selector: string) { void _selector; return new MockHTMLElement(); }
     appendChild(child: any) { this.children.push(child); return child; }
     addEventListener(event: string, handler: Function) {
         this.listeners[event] = handler;
@@ -43,7 +43,7 @@ describe('TextEncoder Page Cleanup', () => {
         // Setup document mock
         const docMock = {
             createElement: (tag: string) => new MockHTMLElement(tag),
-            querySelector: (sel: string) => new MockHTMLElement(),
+            querySelector: (sel: string) => { void sel; return new MockHTMLElement(); },
             body: { appendChild: () => { } },
             execCommand: () => { }
         };

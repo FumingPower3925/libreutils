@@ -6,6 +6,19 @@
 
 import { TextEncoderTool, ENCODING_OPTIONS, type EncodingType } from './tool';
 
+let cleanupHook: (() => void) | null = null;
+
+export function secureCleanup(): void {
+  if (cleanupHook) {
+    try {
+      cleanupHook();
+    } finally {
+      cleanupHook = null;
+    }
+  }
+}
+
+
 export function renderTextEncoderPage(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'text-encoder-page';
@@ -331,8 +344,8 @@ function setupEventListeners(container: HTMLElement): void {
   const copyFeedback = container.querySelector('#copy-feedback') as HTMLDivElement;
 
   cleanupHook = () => {
-    inputText.value = '';
-    outputText.value = '';
+    if (inputText) inputText.value = '';
+    if (outputText) outputText.value = '';
   };
 
   // Update character counts
@@ -401,14 +414,3 @@ function setupEventListeners(container: HTMLElement): void {
   });
 }
 
-let cleanupHook: (() => void) | null = null;
-
-export function secureCleanup(): void {
-  if (cleanupHook) {
-    try {
-      cleanupHook();
-    } finally {
-      cleanupHook = null;
-    }
-  }
-}

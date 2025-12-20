@@ -4,6 +4,19 @@
 
 import { PasswordGenerator, type PasswordOptions, type PasswordStrength } from './tool';
 
+let cleanupHook: (() => void) | null = null;
+
+export function secureCleanup(): void {
+  if (cleanupHook) {
+    try {
+      cleanupHook();
+    } finally {
+      cleanupHook = null;
+    }
+  }
+}
+
+
 export function renderPasswordGeneratorPage(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'password-generator-page';
@@ -836,14 +849,3 @@ function setupEventListeners(container: HTMLElement): void {
   } catch { }
 }
 
-let cleanupHook: (() => void) | null = null;
-
-export function secureCleanup(): void {
-  if (cleanupHook) {
-    try {
-      cleanupHook();
-    } finally {
-      cleanupHook = null;
-    }
-  }
-}
