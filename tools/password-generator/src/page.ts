@@ -4,6 +4,19 @@
 
 import { PasswordGenerator, type PasswordOptions, type PasswordStrength } from './tool';
 
+let cleanupHook: (() => void) | null = null;
+
+export function secureCleanup(): void {
+  if (cleanupHook) {
+    try {
+      cleanupHook();
+    } finally {
+      cleanupHook = null;
+    }
+  }
+}
+
+
 export function renderPasswordGeneratorPage(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'password-generator-page';
@@ -592,8 +605,8 @@ export function renderPasswordGeneratorPage(): HTMLElement {
           </label>
           
           <div style="display: flex; gap: 8px; align-items: center;">
-             <input type="text" id="opt-static-string" class="static-input" placeholder="Static text..." aria-label="Static text to include">
-             <select id="opt-static-pos" class="static-select" aria-label="Static text position">
+             <input type="text" id="opt-static-string" class="static-input" placeholder="Static text..." aria-label="Static text to include" autocomplete="off" data-lpignore="true">
+             <select id="opt-static-pos" class="static-select" aria-label="Static text position" autocomplete="off">
                  <option value="start">Start</option>
                  <option value="middle">Middle</option>
                  <option value="end" selected>End</option>
@@ -648,6 +661,13 @@ function setupEventListeners(container: HTMLElement): void {
   // State
   const passwordHistory: string[] = [];
   const MAX_HISTORY = 5;
+
+  // Register cleanup hook
+  cleanupHook = () => {
+    passwordHistory.length = 0;
+    if (passwordText) passwordText.textContent = '';
+    if (optStaticString) optStaticString.value = '';
+  };
 
   const getOptions = (): PasswordOptions => ({
     length: parseInt(lengthSlider.value, 10),
@@ -746,7 +766,6 @@ function setupEventListeners(container: HTMLElement): void {
     try {
       const options = getOptions();
       const password = PasswordGenerator.generate(options);
-      // Adjust strength calculation by passing static string length 
       const staticLen = options.staticString ? options.staticString.value.length : 0;
       const strength = PasswordGenerator.calculateStrength(password, options.memorable, staticLen);
 
@@ -829,3 +848,4 @@ function setupEventListeners(container: HTMLElement): void {
     // Don't add initial to history
   } catch { }
 }
+

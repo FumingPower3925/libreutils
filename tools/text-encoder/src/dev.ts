@@ -113,3 +113,5 @@ const server = Bun.serve({
 
 console.log(`[OK] Server running at http://localhost:${server.port}`);
 console.log('   Press Ctrl+C to stop');
+
+export { };

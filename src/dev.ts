@@ -86,3 +86,5 @@ const server = Bun.serve({
 });
 
 console.log(`Server running at http://localhost:${server.port}`);
+
+export { };
