@@ -3,101 +3,94 @@
  */
 
 function escapeHtml(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 export class LuCopyToClipboard extends HTMLElement {
-    static tagName = 'lu-copy-to-clipboard';
-    private _value: string = '';
-    private _timer: number | null = null;
+  static tagName = 'lu-copy-to-clipboard';
+  private _value: string | undefined = undefined;
+  private _timer: number | null = null;
 
-    constructor() {
-        super();
-        this.attachShadow({ mode: 'open' });
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+  }
+
+  static get observedAttributes(): string[] {
+    return ['label', 'text'];
+  }
+
+  get value(): string {
+    return this._value !== undefined ? this._value : (this.getAttribute('text') || '');
+  }
+
+  set value(val: string) {
+    this._value = val;
+    this.setAttribute('text', val);
+  }
+
+  connectedCallback(): void {
+    this.render();
+  }
+
+  attributeChangedCallback(name: string, oldValue: string, newValue: string): void {
+    if (oldValue === newValue) return;
+    if (name === 'text') this._value = newValue;
+    this.render();
+  }
+
+  private async handleCopy(e: Event): Promise<void> {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const text = this.value;
+    if (!text) return;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      this.showFeedback();
+    } catch {
+      // Fallback
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        this.showFeedback();
+      } catch (err) {
+        console.error('Copy failed', err);
+      } finally {
+        document.body.removeChild(textarea);
+      }
     }
+  }
 
-    static get observedAttributes(): string[] {
-        return ['label', 'text'];
+  private showFeedback(): void {
+    if (!this.shadowRoot) return;
+
+    const feedback = this.shadowRoot.querySelector('.feedback');
+    if (feedback) {
+      feedback.classList.add('visible');
+
+      if (this._timer) window.clearTimeout(this._timer);
+      this._timer = window.setTimeout(() => {
+        feedback.classList.remove('visible');
+        this._timer = null;
+      }, 2000);
     }
+  }
 
-    get value(): string {
-        return this._value || this.getAttribute('text') || '';
-    }
+  private render(): void {
+    if (!this.shadowRoot) return;
 
-    set value(val: string) {
-        this._value = val;
-        this.setAttribute('text', val);
-    }
+    const label = escapeHtml(this.getAttribute('label') || 'Copy');
 
-    connectedCallback(): void {
-        this.render();
-    }
-
-    attributeChangedCallback(name: string, oldValue: string, newValue: string): void {
-        if (oldValue === newValue) return;
-        if (name === 'text') this._value = newValue;
-        this.render();
-    }
-
-    private async handleCopy(e: Event): Promise<void> {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const text = this.value;
-        if (!text) return;
-
-        try {
-            await navigator.clipboard.writeText(text);
-            this.showFeedback();
-        } catch {
-            // Fallback
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            try {
-                document.execCommand('copy');
-                this.showFeedback();
-            } catch (err) {
-                console.error('Copy failed', err);
-            } finally {
-                document.body.removeChild(textarea);
-            }
-        }
-    }
-
-    private showFeedback(): void {
-        if (!this.shadowRoot) return;
-
-        const feedback = this.shadowRoot.querySelector('.feedback');
-        if (feedback) {
-            feedback.classList.add('visible');
-
-            if (this._timer) window.clearTimeout(this._timer);
-            this._timer = window.setTimeout(() => {
-                feedback.classList.remove('visible');
-                this._timer = null;
-            }, 2000);
-        }
-    }
-
-    private render(): void {
-        if (!this.shadowRoot) return;
-
-        // Don't re-render if we are just updating text attribute to avoid losing focus or animation state
-        // But for simplicity in this version, we re-render on most changes except if we optimize later.
-        // Actually, checking if shadowRoot has content might be enough for initial render, 
-        // but observedAttributes will trigger this. 
-        // Let's implement a simple check to avoid full re-render if only text changed?
-        // For now, full render is safer to ensure state consistency.
-
-        const label = escapeHtml(this.getAttribute('label') || 'Copy');
-
-        this.shadowRoot.innerHTML = `
+    this.shadowRoot.innerHTML = `
       <style>
         :host {
           display: inline-block;
@@ -158,7 +151,7 @@ export class LuCopyToClipboard extends HTMLElement {
         }
       </style>
       
-      <button class="btn" type="button" aria-label="${label}">
+      <button class="btn" type="button">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
           <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
@@ -174,9 +167,9 @@ export class LuCopyToClipboard extends HTMLElement {
       </div>
     `;
 
-        const btn = this.shadowRoot.querySelector('button');
-        if (btn) {
-            btn.onclick = (e) => this.handleCopy(e);
-        }
+    const btn = this.shadowRoot.querySelector('button');
+    if (btn) {
+      btn.onclick = (e) => this.handleCopy(e);
     }
+  }
 }

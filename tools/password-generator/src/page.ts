@@ -226,7 +226,6 @@ export function renderPasswordGeneratorPage(): HTMLElement {
          text-transform: uppercase;
          letter-spacing: 0.05em;
          font-weight: 600;
-         font-weight: 600;
          color: var(--lu-text-muted, #9ca3af);
          margin: 0;
       }
@@ -720,12 +719,9 @@ function setupEventListeners(container: HTMLElement): void {
       passSpan.className = 'hist-pass';
       passSpan.textContent = pwd;
 
-      const copyBtn = document.createElement('lu-copy-to-clipboard');
-      copyBtn.setAttribute('text', pwd);
+      const copyBtn = document.createElement('lu-copy-to-clipboard') as HTMLElement & { value: string; label: string };
+      copyBtn.value = pwd;
       copyBtn.setAttribute('label', 'Copy');
-      // Style it to match previous look if needed, or rely on defaults
-      // The default button style is block-ish, history might need adjustment
-      // But component has its own styles. Let's trust it for now.
 
       item.appendChild(passSpan);
       item.appendChild(copyBtn);
@@ -746,8 +742,6 @@ function setupEventListeners(container: HTMLElement): void {
       historyList.classList.remove('expanded');
     }
   });
-
-
 
   const generatePassword = (): void => {
     try {
