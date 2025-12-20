@@ -1,5 +1,11 @@
-import { AMBIGUOUS, UPPERCASE, LOWERCASE, NUMBERS, SYMBOLS } from './constants';
 import { WORD_LIST } from './wordlist';
+
+const UPPERCASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const LOWERCASE = 'abcdefghijklmnopqrstuvwxyz';
+const NUMBERS = '0123456789';
+const SYMBOLS = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+const AMBIGUOUS = 'Il1O0';
+
 
 export interface PasswordOptions {
     /** Length of the generated password (4-2048) */
