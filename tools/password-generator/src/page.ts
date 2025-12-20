@@ -195,19 +195,48 @@ export function renderPasswordGeneratorPage(): HTMLElement {
         display: block;
       }
       
+      .history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        margin-bottom: var(--lu-space-3, 0.75rem);
+        user-select: none;
+      }
+      
       .history-title {
          font-size: var(--lu-text-xs, 0.75rem);
          text-transform: uppercase;
          letter-spacing: 0.05em;
          font-weight: 600;
          color: var(--lu-text-muted, #9ca3af);
-         margin-bottom: var(--lu-space-3, 0.75rem);
+         margin: 0;
+      }
+      
+      .history-toggle-icon {
+        width: 16px;
+        height: 16px;
+        color: var(--lu-text-muted, #9ca3af);
+        transition: transform 0.2s ease;
+      }
+      
+      /* Rotated state for expanded (pointing up) */
+      .history-header[aria-expanded="true"] .history-toggle-icon {
+        transform: rotate(180deg);
       }
       
       .history-list {
-        display: flex;
+        display: none;
         flex-direction: column;
         gap: var(--lu-space-2, 0.5rem);
+      }
+      
+      .history-list.expanded {
+        display: flex;
       }
       
       .history-item {
@@ -243,6 +272,7 @@ export function renderPasswordGeneratorPage(): HTMLElement {
         text-decoration: underline;
       }
 
+      /* ... rest of styles ... */
       .options-panel {
         background: var(--lu-bg-card, white);
         border: 1px solid var(--lu-border, #e5e7eb);
@@ -457,7 +487,12 @@ export function renderPasswordGeneratorPage(): HTMLElement {
       </button>
 
       <div class="history-section" id="history-section">
-         <div class="history-title">Recent Passwords</div>
+         <button class="history-header" id="history-header" aria-expanded="false" aria-controls="history-list">
+             <span class="history-title">Recent Passwords</span>
+             <svg class="history-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+               <path d="M6 9l6 6 6-6"/>
+             </svg>
+         </button>
          <div class="history-list" id="history-list">
              <!-- History Items -->
          </div>
@@ -465,6 +500,7 @@ export function renderPasswordGeneratorPage(): HTMLElement {
     </div>
 
     <div class="options-panel">
+      <!-- Options content remains same -->
       <div class="options-title-row">
          <h2 class="options-title">Options</h2>
          <div class="presets">
@@ -573,8 +609,9 @@ function setupEventListeners(container: HTMLElement): void {
   const presetEasy = container.querySelector('#preset-easy') as HTMLButtonElement;
   const presetPin = container.querySelector('#preset-pin') as HTMLButtonElement;
 
-  const historyList = container.querySelector('#history-list') as HTMLDivElement;
   const historySection = container.querySelector('#history-section') as HTMLDivElement;
+  const historyList = container.querySelector('#history-list') as HTMLDivElement;
+  const historyHeader = container.querySelector('#history-header') as HTMLButtonElement;
 
   // State
   let passwordHistory: string[] = [];
@@ -655,6 +692,20 @@ function setupEventListeners(container: HTMLElement): void {
     });
   };
 
+  // Toggle History Logic
+  historyHeader.addEventListener('click', () => {
+    const isExpanded = historyHeader.getAttribute('aria-expanded') === 'true';
+    const newState = !isExpanded;
+
+    historyHeader.setAttribute('aria-expanded', String(newState));
+
+    if (newState) {
+      historyList.classList.add('expanded');
+    } else {
+      historyList.classList.remove('expanded');
+    }
+  });
+
   const generatePassword = (): void => {
     try {
       const options = getOptions();
@@ -726,9 +777,7 @@ function setupEventListeners(container: HTMLElement): void {
     copyToClipboard(text);
   });
 
-  // Initial call - do NOT generate password on load to keep history clean? 
-  // Or generate one but don't add to history?
-  // Let's generate one but clear history
+  // Initial call
   try {
     const options = getOptions();
     const password = PasswordGenerator.generate(options);
