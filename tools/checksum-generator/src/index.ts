@@ -1,0 +1,1 @@
+export { renderChecksumPage } from './page';
