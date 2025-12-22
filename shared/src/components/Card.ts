@@ -46,7 +46,6 @@ export class LuCard extends HTMLElement {
         .card {
           display: flex;
           flex-direction: column;
-          height: 100%;
           background: var(--lu-bg-card, white);
           border: 1px solid var(--lu-border, #e5e7eb);
           border-radius: var(--lu-radius-lg, 0.75rem);
@@ -95,7 +94,10 @@ export class LuCard extends HTMLElement {
           color: var(--lu-text-secondary, #6b7280);
           line-height: 1.6;
           margin: 0;
-          flex: 1;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
         .card-footer {
           margin-top: var(--lu-space-4, 1rem);

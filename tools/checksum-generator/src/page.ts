@@ -166,9 +166,7 @@ export function renderChecksumPage(): HTMLElement {
 
         <button class="btn" id="gen-btn">Generate Hash</button>
 
-        <div class="result-box" id="gen-result">
-           <!-- Results go here -->
-        </div>
+        <div class="result-box" id="gen-result"></div>
       </div>
 
       <!-- VERIFY TAB -->
@@ -200,7 +198,6 @@ export function renderChecksumPage(): HTMLElement {
 }
 
 function setupEventListeners(container: HTMLElement) {
-    // Tabs...
     const tabs = container.querySelectorAll('.tab');
     const sections = container.querySelectorAll('.mode-section');
     tabs.forEach(tab => {
