@@ -27,12 +27,10 @@ describe('ChecksumTool', () => {
         expect(hash).toBe('b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9');
     });
 
-    it('should calculate BLAKE2b correctly for text', async () => {
-        const hash = await ChecksumTool.calculateText('hello world', 'BLAKE2b');
-        // Verified via other tools or trusted source for "hello world" blake2b-512
-        // Noble defaults to 512 bits (64 bytes)
-        expect(hash).toHaveLength(128); // 64 bytes hex
-        expect(hash).toBe('021ced8799296ceca557832ab941a50b4a11f83478cf141f51f933f653ab9fbcc05a037cddbed06e309bf334942c4e58cdf1a46e237911ccd7fcf9787cbc7fd0');
+    it('should calculate SHA-512 correctly for text', async () => {
+        const hash = await ChecksumTool.calculateText('hello world', 'SHA-512');
+        // echo -n "hello world" | shasum -a 512
+        expect(hash).toBe('309ecc489c12d6eb4cc40f50c902f2b4d0ed77ee511a7c7a9bcd3ca86d4cd86f989dd35bc5ff499670da34255b45b0cfd830e81f605dcf7dc5542e93ae9cd76f');
     });
 
     it('should stream file and calculate hash', async () => {
@@ -45,15 +43,8 @@ describe('ChecksumTool', () => {
     });
 
     it('should report progress during file streaming', async () => {
-        // Create larger content to force chunks if possible, or Mock FileReader behavior
-        // Since we can't easily force FileReader async behavior in Bun test environment without strict mocks,
-        // we relied on the standard implementation.
-        // We will just verify it calls back.
-
         const content = new Uint8Array(20 * 1024 * 1024); // 20MB
-        // Fill with some data
         content[0] = 1; content[content.length - 1] = 255;
-
         const file = new File([content], 'large.bin');
 
         let progressCalls = 0;
@@ -64,8 +55,6 @@ describe('ChecksumTool', () => {
         });
 
         expect(progressCalls).toBeGreaterThan(0);
-        // MD5 of 20MB zeros (mostly)
-        // calculated locally or just expect string
         expect(hash).toBeTruthy();
     });
 });

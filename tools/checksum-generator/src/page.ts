@@ -68,7 +68,10 @@ export function renderChecksumPage(): HTMLElement {
 
     <header class="header">
       <h1 class="title">${ICONS.hash} Checksum Generator</h1>
-      <p class="subtitle">Generate and verify file hashes (MD5, SHA, BLAKE)</p>
+      <p class="subtitle">Generate and verify file hashes</p>
+      <div style="font-size: 0.8rem; color: var(--lu-text-muted); margin-top: 0.5rem;">
+        Powered by <a href="https://github.com/paulmillr/noble-hashes" target="_blank" style="color:inherit; text-decoration:underline;">noble-hashes</a> (Zero Dependency)
+      </div>
     </header>
 
     <div class="card">

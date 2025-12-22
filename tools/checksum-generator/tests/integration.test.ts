@@ -7,7 +7,6 @@ if (!global.window) {
 }
 
 // Import after DOM registration
-// Import after DOM registration
 const { renderChecksumPage } = await import("../src/page");
 
 describe('Checksum Generator UI', () => {
@@ -29,28 +28,19 @@ describe('Checksum Generator UI', () => {
         const areaFile = container.querySelector('#input-file-area') as HTMLElement;
         const areaText = container.querySelector('#input-text-area') as HTMLElement;
 
-        // Default is File
         expect(areaFile.style.display).not.toBe('none');
         expect(areaText.style.display).toBe('none');
 
-        // Click Text
         btnText.click();
         expect(areaFile.style.display).toBe('none');
         expect(areaText.style.display).toBe('block');
 
-        // Click File
         btnFile.click();
         expect(areaFile.style.display).toBe('block');
         expect(areaText.style.display).toBe('none');
     });
 
     it('should verify hash logic (mocked) on UI', async () => {
-        // We test if the button triggers the calculate function
-        // But since ChecksumTool is imported in the module, mocking it might be tricky
-        // without jest.mock or similar in bun.
-        // We will rely on real calculation for small text.
-
-        // Switch to text mode
         const btnText = container.querySelector('#btn-mode-text') as HTMLButtonElement;
         btnText.click();
 
@@ -60,12 +50,11 @@ describe('Checksum Generator UI', () => {
         const btnGen = container.querySelector('#gen-btn') as HTMLButtonElement;
         btnGen.click();
 
-        // Wait for async
-        await new Promise(resolve => setTimeout(resolve, 100)); // basic wait
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         const resultBox = container.querySelector('#gen-result') as HTMLElement;
-        expect(resultBox.innerHTML).toContain('MD5'); // Default algo or first result
-        expect(resultBox.innerHTML).toContain('5d41402abc4b2a76b9719d911017c592'); // MD5 of 'hello'
+        expect(resultBox.innerHTML).toContain('MD5');
+        expect(resultBox.innerHTML).toContain('5d41402abc4b2a76b9719d911017c592');
     });
 
     it('should handle "ALL" algorithm selection', async () => {
@@ -78,9 +67,8 @@ describe('Checksum Generator UI', () => {
         await new Promise(resolve => setTimeout(resolve, 200));
 
         const resultBox = container.querySelector('#gen-result') as HTMLElement;
-        // Should contain result items for multiple algos
+        // Should contain result items for MD5, SHA-1, SHA-256, SHA-512
         expect(resultBox.querySelectorAll('.algo-result-item').length).toBeGreaterThan(1);
         expect(resultBox.innerHTML).toContain('SHA-256');
-        expect(resultBox.innerHTML).toContain('BLAKE2b');
     });
 });

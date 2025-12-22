@@ -1,11 +1,8 @@
-import { sha256 } from './lib/noble/sha256';
-import { sha512 } from './lib/noble/sha512';
-import { sha1 } from './lib/noble/sha1';
-import { blake2b } from './lib/noble/blake2b';
-// @ts-ignore
-import SparkMD5 from './lib/spark-md5.js';
 
-export type ChecksumAlgorithm = 'MD5' | 'SHA-1' | 'SHA-256' | 'SHA-512' | 'BLAKE2b';
+import { sha256, sha512 } from './lib/noble/sha2';
+import { sha1, md5 } from './lib/noble/legacy';
+
+export type ChecksumAlgorithm = 'MD5' | 'SHA-1' | 'SHA-256' | 'SHA-512';
 
 export interface AlgorithmOption {
     id: ChecksumAlgorithm;
@@ -14,11 +11,10 @@ export interface AlgorithmOption {
 }
 
 export const CHECKSUM_ALGORITHMS: AlgorithmOption[] = [
-    { id: 'MD5', name: 'MD5', description: 'Fast, common but insecure' },
-    { id: 'SHA-1', name: 'SHA-1', description: 'Legacy, commonly used' },
-    { id: 'SHA-256', name: 'SHA-256', description: 'Secure, industry standard' },
+    { id: 'MD5', name: 'MD5', description: 'Legacy, commonly used (insecure)' },
+    { id: 'SHA-1', name: 'SHA-1', description: 'Legacy, commonly used (weak)' },
+    { id: 'SHA-256', name: 'SHA-256', description: 'Secure standard' },
     { id: 'SHA-512', name: 'SHA-512', description: 'High security' },
-    { id: 'BLAKE2b', name: 'BLAKE2b', description: 'High speed and security' },
 ];
 
 export class ChecksumTool {
@@ -39,34 +35,28 @@ export class ChecksumTool {
      * Calculate hash for byte array
      */
     static async calculateBytes(data: Uint8Array, algorithm: ChecksumAlgorithm): Promise<string> {
-        // Use Web Crypto API for SHA family if available (much faster)
-        if (['SHA-1', 'SHA-256', 'SHA-512'].includes(algorithm) && crypto.subtle) {
+        // Web Crypto Optimization for SHA family (MD5 not supported)
+        if (algorithm !== 'MD5' && crypto.subtle) {
             try {
-                const algoName = algorithm === 'SHA-1' ? 'SHA-1' : algorithm; // Names match
-                const hashBuffer = await crypto.subtle.digest(algoName, data as BufferSource);
+                // Algo names map directly: SHA-1, SHA-256, SHA-512
+                const hashBuffer = await crypto.subtle.digest(algorithm, data as BufferSource);
                 return this.bytesToHex(new Uint8Array(hashBuffer));
             } catch (e) {
-                console.warn('Web Crypto failed, falling back to JS implementation', e);
+                // Fallback to JS implementation
             }
         }
 
+        let hasher;
         switch (algorithm) {
-            case 'MD5': {
-                const spark = new SparkMD5.ArrayBuffer();
-                spark.append(data.buffer as ArrayBuffer);
-                return spark.end();
-            }
-            case 'SHA-1':
-                return this.bytesToHex(sha1(data));
-            case 'SHA-256':
-                return this.bytesToHex(sha256(data));
-            case 'SHA-512':
-                return this.bytesToHex(sha512(data));
-            case 'BLAKE2b':
-                return this.bytesToHex(blake2b(data));
-            default:
-                throw new Error(`Unsupported algorithm: ${algorithm}`);
+            case 'MD5': hasher = md5.create(); break;
+            case 'SHA-1': hasher = sha1.create(); break;
+            case 'SHA-256': hasher = sha256.create(); break;
+            case 'SHA-512': hasher = sha512.create(); break;
+            default: throw new Error(`Unknown algorithm: ${algorithm}`);
         }
+
+        hasher.update(data);
+        return this.bytesToHex(hasher.digest());
     }
 
     /**
@@ -78,41 +68,29 @@ export class ChecksumTool {
         onProgress?: (percent: number) => void
     ): Promise<string> {
         return new Promise((resolve, reject) => {
-            const chunkSize = 10 * 1024 * 1024; // 10MB chunks
+            const chunkSize = 10 * 1024 * 1024; // 10MB
             const fileSize = file.size;
             let offset = 0;
 
-            // Initialize hasher
             let hasher: any;
-            if (algorithm === 'MD5') {
-                hasher = new SparkMD5.ArrayBuffer();
-            } else if (algorithm === 'SHA-1') {
-                hasher = sha1.create();
-            } else if (algorithm === 'SHA-256') {
-                hasher = sha256.create();
-            } else if (algorithm === 'SHA-512') {
-                hasher = sha512.create();
-            } else if (algorithm === 'BLAKE2b') {
-                hasher = blake2b.create({});
-            } else {
-                reject(new Error(`Unsupported algorithm: ${algorithm}`));
-                return;
+            switch (algorithm) {
+                case 'MD5': hasher = md5.create(); break;
+                case 'SHA-1': hasher = sha1.create(); break;
+                case 'SHA-256': hasher = sha256.create(); break;
+                case 'SHA-512': hasher = sha512.create(); break;
+                default:
+                    reject(new Error(`Unknown algorithm: ${algorithm}`));
+                    return;
             }
 
             const reader = new FileReader();
 
             reader.onload = (e) => {
                 if (!e.target?.result) return;
-
                 const buffer = e.target.result as ArrayBuffer;
-                const uint8 = new Uint8Array(buffer); // Noble requires Uint8Array, Spark requires ArrayBuffer?
+                const uint8 = new Uint8Array(buffer);
 
-                // Update hasher
-                if (algorithm === 'MD5') {
-                    hasher.append(buffer); // SparkMD5.ArrayBuffer takes ArrayBuffer
-                } else {
-                    hasher.update(uint8); // Noble takes Uint8Array
-                }
+                hasher.update(uint8);
 
                 offset += buffer.byteLength;
 
@@ -123,12 +101,7 @@ export class ChecksumTool {
                 if (offset < fileSize) {
                     readNextChunk();
                 } else {
-                    // Finalize
-                    if (algorithm === 'MD5') {
-                        resolve(hasher.end());
-                    } else {
-                        resolve(this.bytesToHex(hasher.digest()));
-                    }
+                    resolve(this.bytesToHex(hasher.digest()));
                 }
             };
 
