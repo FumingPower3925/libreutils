@@ -4,13 +4,8 @@
  */
 /*! noble-hashes - MIT License (c) 2022 Paul Miller (paulmillr.com) */
 
-// We use WebCrypto aka globalThis.crypto, which exists in browsers and node.js 16+.
-// node.js versions earlier than v19 don't declare it in global scope.
-// For node.js, package.json#exports field mapping rewrites import
-// from `crypto` to `cryptoNode`, which imports native module.
-// Makes the utils un-importable in browsers without a bundler.
-// Once node.js 18 is deprecated (2025-04-30), we can just drop the import.
-import { crypto } from '@noble/hashes/crypto';
+// Use globalThis.crypto which is available in browsers and Node.js 18+
+const crypto = globalThis.crypto;
 
 /** Checks if something is Uint8Array. Be careful: nodejs Buffer will return true. */
 export function isBytes(a: unknown): a is Uint8Array {
@@ -185,7 +180,7 @@ export function hexToBytes(hex: string): Uint8Array {
  * Call of async fn will return Promise, which will be fullfiled only on
  * next scheduler queue processing step and this is exactly what we need.
  */
-export const nextTick = async (): Promise<void> => {};
+export const nextTick = async (): Promise<void> => { };
 
 /** Returns control to thread each 'tick' ms to avoid blocking. */
 export async function asyncLoop(
@@ -382,14 +377,10 @@ export const wrapConstructor: typeof createHasher = createHasher;
 export const wrapConstructorWithOpts: typeof createOptHasher = createOptHasher;
 export const wrapXOFConstructorWithOpts: typeof createXOFer = createXOFer;
 
-/** Cryptographically secure PRNG. Uses internal OS-level `crypto.getRandomValues`. */
+/** Cryptographically secure PRNG. Uses Web Crypto API. */
 export function randomBytes(bytesLength = 32): Uint8Array {
   if (crypto && typeof crypto.getRandomValues === 'function') {
     return crypto.getRandomValues(new Uint8Array(bytesLength));
-  }
-  // Legacy Node.js compatibility
-  if (crypto && typeof crypto.randomBytes === 'function') {
-    return Uint8Array.from(crypto.randomBytes(bytesLength));
   }
   throw new Error('crypto.getRandomValues must be defined');
 }
