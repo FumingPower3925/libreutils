@@ -1,0 +1,11 @@
+# Cloudflare Pages configuration
+# See: https://developers.cloudflare.com/pages/configuration/wrangler-configuration/
+
+name = "libreutils"
+compatibility_date = "2024-01-01"
+
+[build]
+command = "bun install && bun run build"
+
+[build.environment]
+NODE_VERSION = "22"
