@@ -1,19 +1,19 @@
 {
-    "name": "@libreutils/tool-text-encoder",
-    "version": "0.1.2",
-    "private": true,
-    "type": "module",
-    "description": "Encode and decode text using various formats (Base64, URL, HTML entities, etc.)",
-    "main": "./src/index.ts",
-    "exports": {
-        ".": "./src/index.ts",
-        "./meta": "./src/meta.ts"
-    },
-    "scripts": {
-        "dev": "bun run ./src/dev.ts",
-        "build": "bun build ./src/index.ts --outdir ./dist --target browser --minify"
-    },
-    "dependencies": {
-        "@libreutils/shared": "file:../../shared"
-    }
+  "name": "@libreutils/tool-text-encoder",
+  "version": "0.1.3",
+  "private": true,
+  "type": "module",
+  "description": "Encode and decode text using various formats (Base64, URL, HTML entities, etc.)",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./meta": "./src/meta.ts"
+  },
+  "scripts": {
+    "dev": "bun run ./src/dev.ts",
+    "build": "bun build ./src/index.ts --outdir ./dist --target browser --minify"
+  },
+  "dependencies": {
+    "@libreutils/shared": "file:../../shared"
+  }
 }
