@@ -2,7 +2,9 @@ import { describe, it, expect, beforeEach, afterEach, spyOn, mock, beforeAll } f
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import type { LuDownloadButton as LuDownloadButtonType } from "../src/components/DownloadButton";
 
-GlobalRegistrator.register();
+if (!global.window) {
+    GlobalRegistrator.register();
+}
 
 // Delay import until after DOM registration
 const { LuDownloadButton } = await import("../src/components/DownloadButton");

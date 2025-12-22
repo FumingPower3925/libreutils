@@ -7,6 +7,7 @@ import { renderNotFoundPage } from './pages/not-found';
 import { renderTextEncoderPage, secureCleanup as cleanupTextEncoder } from '../tools/text-encoder/src/page';
 import { renderPasswordGeneratorPage, secureCleanup as cleanupPasswordGenerator } from '../tools/password-generator/src/page';
 import { renderEncryptorPage, secureCleanup as cleanupEncryptor } from '../tools/encryption-decryption/src/page';
+import { renderChecksumPage } from '../tools/checksum-generator/src/page';
 
 function initTheme(): void {
     const stored = localStorage.getItem('lu-theme');
@@ -130,6 +131,11 @@ const routes: Route[] = [
         title: 'Encryptor / Decryptor',
         render: renderEncryptorPage,
         onLeave: cleanupEncryptor
+    },
+    {
+        path: '/tools/checksum-generator',
+        title: 'Checksum Generator',
+        render: renderChecksumPage
     },
 ];
 
