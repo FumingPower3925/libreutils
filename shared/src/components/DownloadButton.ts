@@ -1,3 +1,4 @@
+/// <reference path="../types.d.ts" />
 /**
  * DownloadButton Web Component
  * 
@@ -11,26 +12,7 @@ function escapeHtml(text: string): string {
   return div.innerHTML;
 }
 
-declare global {
-  interface Window {
-    showSaveFilePicker(options?: {
-      suggestedName?: string;
-      types?: Array<{
-        description?: string;
-        accept: Record<string, string[]>;
-      }>;
-    }): Promise<FileSystemFileHandle>;
-  }
-
-  interface FileSystemFileHandle {
-    createWritable(): Promise<FileSystemWritableFileStream>;
-  }
-
-  interface FileSystemWritableFileStream extends WritableStream {
-    write(data: Blob | BufferSource | string): Promise<void>;
-    close(): Promise<void>;
-  }
-}
+// Types are now in shared/src/types.d.ts
 
 export class LuDownloadButton extends HTMLElement {
   static tagName = 'lu-download-button';
@@ -100,7 +82,7 @@ export class LuDownloadButton extends HTMLElement {
 
     const blobContent = typeof content === 'string'
       ? [content]
-      : [content.buffer as ArrayBuffer];
+      : [content as any];
     const blob = new Blob(blobContent, { type: mimeType });
 
     const ext = filename.split('.').pop() || 'txt';
@@ -121,7 +103,7 @@ export class LuDownloadButton extends HTMLElement {
         await writable.close();
         return;
       } catch (err) {
-        if ((err as any).name === 'AbortError') return;
+        if (err instanceof Error && err.name === 'AbortError') return;
       }
     }
 
@@ -136,7 +118,7 @@ export class LuDownloadButton extends HTMLElement {
     setTimeout(() => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    }, 500);
+    }, 0);
   }
 
   private render(): void {

@@ -344,7 +344,7 @@ describe('EncryptorTool', () => {
         });
 
         it('returns undefined for invalid algorithm', () => {
-            const info = EncryptorTool.getAlgorithmInfo('INVALID' as any);
+            const info = EncryptorTool.getAlgorithmInfo('INVALID' as unknown as EncryptionAlgorithm);
 
             expect(info).toBeUndefined();
         });

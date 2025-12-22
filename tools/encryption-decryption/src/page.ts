@@ -17,7 +17,7 @@ import {
   DEFAULT_SALT_LENGTH,
   DEFAULT_IV_LENGTH
 } from './tool';
-import type { EncryptionAlgorithm, EncryptionOption, AdvancedOptions } from './tool';
+import type { EncryptionAlgorithm, AdvancedOptions } from './tool';
 
 let cleanupHook: (() => void) | null = null;
 
@@ -26,6 +26,47 @@ export function secureCleanup(): void {
     cleanupHook();
   }
 }
+
+// Best-effort helpers to overwrite sensitive data before clearing.
+// Note: JavaScript cannot guarantee secure memory wiping. These functions
+// reduce, but do not eliminate, the risk of sensitive data lingering.
+const secureRandomString = (length: number): string => {
+  if (length <= 0) return '';
+  const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const charsetLen = charset.length;
+  let result = '';
+
+  const globalAny = globalThis as any;
+  const cryptoObj: Crypto | undefined =
+    (typeof globalThis !== 'undefined' &&
+      (globalAny.crypto || globalAny.msCrypto)) as Crypto | undefined;
+
+  if (cryptoObj && typeof cryptoObj.getRandomValues === 'function') {
+    const randomValues = new Uint32Array(length);
+    cryptoObj.getRandomValues(randomValues);
+    for (let i = 0; i < length; i++) {
+      result += charset[randomValues[i] % charsetLen];
+    }
+  } else {
+    // Fallback to Math.random if crypto is not available.
+    for (let i = 0; i < length; i++) {
+      const idx = Math.floor(Math.random() * charsetLen);
+      result += charset[idx];
+    }
+  }
+
+  return result;
+};
+
+const scrubValueElement = (el: { value: string } | null | undefined): void => {
+  if (!el) return;
+  const len = el.value ? el.value.length : 0;
+  if (len > 0) {
+    // Overwrite with random data before clearing.
+    el.value = secureRandomString(len);
+  }
+  el.value = '';
+};
 
 // Maximum size for text display in output (100MB) - larger files only show download option
 const MAX_TEXT_DISPLAY_SIZE = 100 * 1024 * 1024;
@@ -722,14 +763,32 @@ function setupEventListeners(container: HTMLElement): void {
   // Populate algorithm options with feature detection
   populateAlgorithmSelect(algorithm);
 
+
   // Cleanup hook
   cleanupHook = () => {
-    if (inputText) inputText.value = '';
-    if (password) password.value = '';
-    if (confirmPassword) confirmPassword.value = '';
-    if (outputText) outputText.value = '';
+    // Best-effort scrubbing of sensitive text fields.
+    scrubValueElement(inputText);
+    scrubValueElement(password);
+    scrubValueElement(confirmPassword);
+    scrubValueElement(outputText);
+
+    // copyOutputBtn is not expected to hold sensitive data, so a simple clear is used.
     if (copyOutputBtn) copyOutputBtn.value = '';
+
     selectedFile = null;
+
+    // Best-effort scrubbing of in-memory file data.
+    if (fileData) {
+      const globalAny = globalThis as any;
+      const cryptoObj: Crypto | undefined =
+        (typeof globalThis !== 'undefined' &&
+          (globalAny.crypto || globalAny.msCrypto)) as Crypto | undefined;
+      if (cryptoObj && typeof cryptoObj.getRandomValues === 'function') {
+        cryptoObj.getRandomValues(fileData);
+      }
+      // Overwrite again with zeros to reduce residual data.
+      fileData.fill(0);
+    }
     fileData = null;
   };
 
@@ -906,7 +965,10 @@ function setupEventListeners(container: HTMLElement): void {
             return;
           }
           advOptions.filename = selectedFile.name;
-          advOptions.mimeType = selectedFile.type || getMimeType(selectedFile.name.split('.').pop()?.toLowerCase() || '');
+          advOptions.mimeType = selectedFile.type;
+          if (!advOptions.mimeType) {
+            advOptions.mimeType = getMimeType(selectedFile.name.split('.').pop()?.toLowerCase() || '');
+          }
           result = await EncryptorTool.encrypt(fileData, pwd, alg, advOptions);
         }
 
@@ -953,7 +1015,7 @@ function setupEventListeners(container: HTMLElement): void {
           for (let i = 0; i < sample.length; i++) {
             const byte = sample[i];
             // ASCII printable (32-126), newline, tab, carriage return
-            if ((byte >= 32 && byte <= 126) || byte === 10 || byte === 13 || byte === 9 || byte >= 128) {
+            if ((byte >= 32 && byte <= 126) || byte === 10 || byte === 13 || byte === 9) {
               printableCount++;
             }
           }
@@ -979,7 +1041,12 @@ function setupEventListeners(container: HTMLElement): void {
           copyOutputBtn.value = '';
           downloadBtn.content = decrypted;
           const ext = originalFilename?.split('.').pop()?.toLowerCase() || '';
-          downloadBtn.mimeType = originalMimeType || getMimeType(ext);
+          let mimeType = originalMimeType;
+          if (!mimeType) {
+            const ext = originalFilename?.split('.').pop()?.toLowerCase() || '';
+            mimeType = getMimeType(ext) || 'application/octet-stream';
+          }
+          downloadBtn.mimeType = mimeType;
           downloadBtn.filename = originalFilename || 'decrypted.bin';
         }
 

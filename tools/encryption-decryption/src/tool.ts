@@ -93,7 +93,7 @@ export const ENCRYPTION_OPTIONS: EncryptionOption[] = [
     { id: 'AES-256-GCM', name: 'AES-256-GCM', description: 'Strongest AES encryption (256-bit key)', keyLength: 256, supported: true },
     { id: 'AES-192-GCM', name: 'AES-192-GCM', description: 'Strong AES encryption (192-bit key)', keyLength: 192, supported: true },
     { id: 'AES-128-GCM', name: 'AES-128-GCM', description: 'Fast AES encryption (128-bit key)', keyLength: 128, supported: true },
-    { id: 'ChaCha20-Poly1305', name: 'ChaCha20-Poly1305', description: 'Modern stream cipher (256-bit key)', keyLength: 256, supported: true },
+    { id: 'ChaCha20-Poly1305', name: 'ChaCha20-Poly1305', description: 'Modern stream cipher (256-bit key)', keyLength: 256, supported: false },
 ];
 
 export interface EncryptedPayload {
@@ -126,11 +126,11 @@ function generateRandomBytes(length: number): Uint8Array {
  * Convert Uint8Array to Base64 string
  */
 export function bytesToBase64(bytes: Uint8Array): string {
-    let binary = '';
+    const chars = new Array<string>(bytes.length);
     for (let i = 0; i < bytes.length; i++) {
-        binary += String.fromCharCode(bytes[i]);
+        chars[i] = String.fromCharCode(bytes[i]);
     }
-    return btoa(binary);
+    return btoa(chars.join(''));
 }
 
 /**
@@ -290,27 +290,13 @@ export class EncryptorTool {
      * @param password - User password
      * @returns Decrypted raw bytes
      */
-    static async decrypt(
-        encrypted: string,
+    /**
+     * Internal decryption logic using parsed payload
+     */
+    private static async decryptPayload(
+        payload: EncryptedPayload,
         password: string
     ): Promise<Uint8Array> {
-        if (!password) {
-            throw new Error('Password is required');
-        }
-
-        if (!encrypted) {
-            throw new Error('No data to decrypt');
-        }
-
-        // Parse the payload
-        let payload: EncryptedPayload;
-        try {
-            const jsonStr = new TextDecoder().decode(base64ToBytes(encrypted));
-            payload = JSON.parse(jsonStr);
-        } catch {
-            throw new Error('Invalid encrypted data format');
-        }
-
         // Validate payload version
         if (payload.v !== 1) {
             throw new Error(`Unsupported encryption version: ${payload.v}`);
@@ -355,6 +341,36 @@ export class EncryptorTool {
     }
 
     /**
+     * Decrypt encrypted payload with password
+     * @param encrypted - Base64-encoded JSON payload from encrypt()
+     * @param password - User password
+     * @returns Decrypted raw bytes
+     */
+    static async decrypt(
+        encrypted: string,
+        password: string
+    ): Promise<Uint8Array> {
+        if (!password) {
+            throw new Error('Password is required');
+        }
+
+        if (!encrypted) {
+            throw new Error('No data to decrypt');
+        }
+
+        // Parse the payload
+        let payload: EncryptedPayload;
+        try {
+            const jsonStr = new TextDecoder().decode(base64ToBytes(encrypted));
+            payload = JSON.parse(jsonStr);
+        } catch {
+            throw new Error('Invalid encrypted data format');
+        }
+
+        return this.decryptPayload(payload, password);
+    }
+
+    /**
      * Decrypt to text string
      */
     static async decryptText(
@@ -388,7 +404,7 @@ export class EncryptorTool {
             throw new Error('Invalid encrypted data format');
         }
 
-        const data = await this.decrypt(encrypted, password);
+        const data = await this.decryptPayload(payload, password);
 
         return {
             data,
