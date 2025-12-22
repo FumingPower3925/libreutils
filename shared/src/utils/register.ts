@@ -6,6 +6,8 @@ import { LuLayout } from '../components/Layout';
 import { LuHeader } from '../components/Header';
 import { LuFooter } from '../components/Footer';
 import { LuCard } from '../components/Card';
+import { LuCopyToClipboard } from '../components/CopyToClipboard';
+import { LuDownloadButton } from '../components/DownloadButton';
 
 interface ComponentClass {
     tagName: string;
@@ -17,6 +19,8 @@ const components: ComponentClass[] = [
     LuHeader,
     LuFooter,
     LuCard,
+    LuCopyToClipboard,
+    LuDownloadButton,
 ];
 
 export function registerComponents(): void {

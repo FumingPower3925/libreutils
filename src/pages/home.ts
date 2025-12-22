@@ -20,6 +20,22 @@ const tools: ToolMeta[] = [
     icon: 'PW',
     keywords: ['password', 'generator', 'secure', 'random', 'strong', 'crypto'],
   },
+  {
+    id: 'encryption-decryption',
+    name: 'Encryptor / Decryptor',
+    description: 'Encrypt and decrypt text or files using AES and ChaCha20 with secure password-based key derivation.',
+    category: 'encryption',
+    icon: 'lock',
+    keywords: ['encrypt', 'decrypt', 'AES', 'ChaCha20', 'secure', 'cipher', 'crypto', 'password', 'file'],
+  },
+  {
+    id: 'checksum-generator',
+    name: 'Checksum Generator',
+    description: 'Generate and verify file hashes (MD5, SHA-256, BLAKE3) to ensure data integrity.',
+    category: 'file',
+    icon: 'hash',
+    keywords: ['hash', 'checksum', 'md5', 'sha', 'blake3', 'verify', 'integrity'],
+  },
 ];
 
 const categories = [
@@ -146,7 +162,8 @@ export function renderHomePage(): HTMLElement {
       .tools-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: var(--lu-space-6, 1.5rem);
+        gap: 1.5rem;
+        align-items: start;
       }
       .empty-state {
         text-align: center;

@@ -2,6 +2,7 @@ export interface Route {
     path: string;
     title: string;
     render: () => HTMLElement | Promise<HTMLElement>;
+    onLeave?: () => void;
 }
 
 interface RouterOptions {
@@ -17,11 +18,25 @@ interface Router {
 
 export function createRouter(options: RouterOptions): Router {
     const { routes, container, notFound } = options;
+    let currentRoute: Route | null = null;
 
     async function handleRoute(): Promise<void> {
         const hash = window.location.hash.slice(1) || '/';
         const path = hash.split('?')[0];
+
+        // Find new route
         const route = routes.find(r => r.path === path);
+
+        // Execute cleanup for previous route if navigating away
+        if (currentRoute && currentRoute !== route && currentRoute.onLeave) {
+            try {
+                currentRoute.onLeave();
+            } catch (error) {
+                console.error('Error in route cleanup:', error);
+            }
+        }
+
+        currentRoute = route || null;
 
         container.innerHTML = '';
         window.scrollTo(0, 0);
@@ -51,6 +66,9 @@ export function createRouter(options: RouterOptions): Router {
             window.location.hash = path;
         },
         destroy(): void {
+            if (currentRoute && currentRoute.onLeave) {
+                currentRoute.onLeave();
+            }
             window.removeEventListener('hashchange', handleRoute);
         },
     };

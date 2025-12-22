@@ -6,6 +6,19 @@
 
 import { TextEncoderTool, ENCODING_OPTIONS, type EncodingType } from './tool';
 
+let cleanupHook: (() => void) | null = null;
+
+export function secureCleanup(): void {
+  if (cleanupHook) {
+    try {
+      cleanupHook();
+    } finally {
+      cleanupHook = null;
+    }
+  }
+}
+
+
 export function renderTextEncoderPage(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'text-encoder-page';
@@ -212,26 +225,7 @@ export function renderTextEncoderPage(): HTMLElement {
         display: block;
       }
 
-      .copy-feedback {
-        position: fixed;
-        bottom: var(--lu-space-6, 1.5rem);
-        left: 50%;
-        transform: translateX(-50%) translateY(100px);
-        background: var(--lu-gray-900, #171717);
-        color: white;
-        padding: var(--lu-space-3, 0.75rem) var(--lu-space-6, 1.5rem);
-        border-radius: var(--lu-radius-full, 9999px);
-        font-size: var(--lu-text-sm, 0.875rem);
-        font-weight: 500;
-        opacity: 0;
-        transition: all 0.3s ease;
-        z-index: 1000;
-      }
 
-      .copy-feedback.visible {
-        transform: translateX(-50%) translateY(0);
-        opacity: 1;
-      }
     </style>
     
     <header class="page-header">
@@ -290,7 +284,7 @@ export function renderTextEncoderPage(): HTMLElement {
           <h2 class="panel-title">Input</h2>
           <span class="char-count" id="input-count">0 characters</span>
         </div>
-        <textarea class="text-area" id="input-text" placeholder="Enter text to encode or decode..."></textarea>
+        <textarea class="text-area" id="input-text" placeholder="Enter text to encode or decode..." autocomplete="off" data-lpignore="true"></textarea>
       </div>
       
       <div class="panel">
@@ -298,19 +292,13 @@ export function renderTextEncoderPage(): HTMLElement {
           <h2 class="panel-title">Output</h2>
           <span class="char-count" id="output-count">0 characters</span>
         </div>
-        <textarea class="text-area" id="output-text" placeholder="Result will appear here..." readonly></textarea>
-        <button class="btn btn-secondary" id="copy-btn" style="margin-top: var(--lu-space-3, 0.75rem); width: 100%;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-          </svg>
-          Copy to Clipboard
-        </button>
+        <textarea class="text-area" id="output-text" placeholder="Result will appear here..." readonly autocomplete="off" data-lpignore="true"></textarea>
+        <lu-copy-to-clipboard id="copy-btn" label="Copy to Clipboard" style="display:block; margin-top: var(--lu-space-3, 0.75rem); width: 100%;"></lu-copy-to-clipboard>
         <div class="error-message" id="error-message"></div>
       </div>
     </div>
     
-    <div class="copy-feedback" id="copy-feedback">Copied to clipboard!</div>
+
   `;
 
   setupEventListeners(container);
@@ -324,11 +312,16 @@ function setupEventListeners(container: HTMLElement): void {
   const encodeBtn = container.querySelector('#encode-btn') as HTMLButtonElement;
   const decodeBtn = container.querySelector('#decode-btn') as HTMLButtonElement;
   const swapBtn = container.querySelector('#swap-btn') as HTMLButtonElement;
-  const copyBtn = container.querySelector('#copy-btn') as HTMLButtonElement;
+  const copyBtn = container.querySelector('#copy-btn') as HTMLElement & { value: string };
   const inputCount = container.querySelector('#input-count') as HTMLSpanElement;
   const outputCount = container.querySelector('#output-count') as HTMLSpanElement;
   const errorMessage = container.querySelector('#error-message') as HTMLDivElement;
-  const copyFeedback = container.querySelector('#copy-feedback') as HTMLDivElement;
+
+  cleanupHook = () => {
+    if (inputText) inputText.value = '';
+    if (outputText) outputText.value = '';
+    if (copyBtn) copyBtn.value = '';
+  };
 
   // Update character counts
   const updateCounts = (): void => {
@@ -344,6 +337,7 @@ function setupEventListeners(container: HTMLElement): void {
       errorMessage.classList.remove('visible');
       const result = TextEncoderTool.encode(inputText.value, encodingType.value as EncodingType);
       outputText.value = result;
+      copyBtn.value = result;
       updateCounts();
     } catch (error) {
       errorMessage.textContent = error instanceof Error ? error.message : 'Encoding failed';
@@ -357,6 +351,7 @@ function setupEventListeners(container: HTMLElement): void {
       errorMessage.classList.remove('visible');
       const result = TextEncoderTool.decode(inputText.value, encodingType.value as EncodingType);
       outputText.value = result;
+      copyBtn.value = result;
       updateCounts();
     } catch (error) {
       errorMessage.textContent = error instanceof Error ? error.message : 'Decoding failed';
@@ -369,29 +364,12 @@ function setupEventListeners(container: HTMLElement): void {
     const temp = inputText.value;
     inputText.value = outputText.value;
     outputText.value = temp;
+    copyBtn.value = temp;
     updateCounts();
   });
 
   // Copy
-  copyBtn.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(outputText.value);
-      copyFeedback.classList.add('visible');
-      setTimeout(() => copyFeedback.classList.remove('visible'), 2000);
-    } catch {
-      try {
-        outputText.select();
-        document.execCommand('copy');
-        copyFeedback.classList.add('visible');
-        setTimeout(() => copyFeedback.classList.remove('visible'), 2000);
-      } catch {
-        const errorToast = document.createElement('div');
-        errorToast.className = 'error-toast';
-        errorToast.textContent = 'Failed to copy. Please copy manually.';
-        errorToast.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#dc2626;color:white;padding:12px 20px;border-radius:8px;z-index:10000;';
-        document.body.appendChild(errorToast);
-        setTimeout(() => errorToast.remove(), 3000);
-      }
-    }
-  });
+  // Manual copy logic removed, handled by lu-copy-to-clipboard component
+
 }
+

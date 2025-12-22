@@ -4,6 +4,19 @@
 
 import { PasswordGenerator, type PasswordOptions, type PasswordStrength } from './tool';
 
+let cleanupHook: (() => void) | null = null;
+
+export function secureCleanup(): void {
+  if (cleanupHook) {
+    try {
+      cleanupHook();
+    } finally {
+      cleanupHook = null;
+    }
+  }
+}
+
+
 export function renderPasswordGeneratorPage(): HTMLElement {
   const container = document.createElement('div');
   container.className = 'password-generator-page';
@@ -217,15 +230,24 @@ export function renderPasswordGeneratorPage(): HTMLElement {
          margin: 0;
       }
       
-      .history-toggle-icon {
+      .lu-theme-dark .history-title,
+      .lu-theme-dark .history-header .history-title {
+        color: #bdbdbd !important;
+      }
+      
+      .history-icon,
+      .chevron-icon {
         width: 16px;
         height: 16px;
         color: var(--lu-text-muted, #9ca3af);
+      }
+      
+      .chevron-icon {
         transition: transform 0.2s ease;
       }
       
       /* Rotated state for expanded (pointing up) */
-      .history-header[aria-expanded="true"] .history-toggle-icon {
+      .history-header[aria-expanded="true"] .chevron-icon {
         transform: rotate(180deg);
       }
       
@@ -243,12 +265,13 @@ export function renderPasswordGeneratorPage(): HTMLElement {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: var(--lu-bg-secondary, #f3f4f6);
+        background: var(--lu-bg-card, white);
+        border: 1px solid var(--lu-border, #e5e7eb);
         padding: 8px 12px;
         border-radius: 6px;
         font-family: var(--lu-font-mono, monospace);
         font-size: 0.85rem;
-        color: var(--lu-text-secondary, #6b7280);
+        color: var(--lu-text-primary, #111827);
       }
       
       .history-item .hist-pass {
@@ -256,6 +279,7 @@ export function renderPasswordGeneratorPage(): HTMLElement {
          text-overflow: ellipsis;
          white-space: nowrap;
          max-width: 80%;
+         color: var(--lu-text-primary, #111827);
       }
       
       .history-copy {
@@ -413,13 +437,15 @@ export function renderPasswordGeneratorPage(): HTMLElement {
       }
 
       .checkbox-item:hover {
-        background: var(--lu-primary-50, #f5f3ff);
+        background: var(--lu-gray-200, #eeeeee);
       }
 
-      @media (prefers-color-scheme: dark) {
-        .checkbox-item:hover {
-          background: var(--lu-bg-card-hover, rgba(255, 255, 255, 0.1));
-        }
+      .lu-theme-dark .checkbox-item {
+        background: #2a2a2a;
+      }
+
+      .lu-theme-dark .checkbox-item:hover {
+        background: #333333;
       }
 
       .checkbox-item input {
@@ -435,26 +461,7 @@ export function renderPasswordGeneratorPage(): HTMLElement {
         user-select: none;
       }
 
-      .copy-feedback {
-        position: fixed;
-        bottom: var(--lu-space-6, 1.5rem);
-        left: 50%;
-        transform: translateX(-50%) translateY(100px);
-        background: var(--lu-gray-900, #171717);
-        color: white;
-        padding: var(--lu-space-3, 0.75rem) var(--lu-space-6, 1.5rem);
-        border-radius: var(--lu-radius-full, 9999px);
-        font-size: var(--lu-text-sm, 0.875rem);
-        font-weight: 500;
-        opacity: 0;
-        transition: all 0.3s ease;
-        z-index: 1000;
-      }
 
-      .copy-feedback.visible {
-        transform: translateX(-50%) translateY(0);
-        opacity: 1;
-      }
     </style>
     
     <header class="page-header">
@@ -477,15 +484,10 @@ export function renderPasswordGeneratorPage(): HTMLElement {
     </header>
 
     <div class="password-display">
-      <div class="password-output">
-        <span class="password-text" id="password-text">Click Generate to create a password</span>
-        <button class="copy-btn" id="copy-btn" title="Copy to clipboard" aria-label="Copy password to clipboard">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-          </svg>
-        </button>
-      </div>
+        <div class="password-output">
+          <div class="password-text" id="password-text"></div>
+          <lu-copy-to-clipboard id="main-copy-btn" label="Copy"></lu-copy-to-clipboard>
+        </div>
       
       <div class="strength-bar">
         <div class="strength-fill" id="strength-fill" role="progressbar" aria-valuemin="0" aria-valuemax="6" aria-valuenow="0" style="width: 0%; background: #dc2626;"></div>
@@ -507,16 +509,17 @@ export function renderPasswordGeneratorPage(): HTMLElement {
       </button>
 
       <div class="history-section" id="history-section">
-         <button class="history-header" id="history-header" aria-expanded="false" aria-controls="history-list">
-             <span class="history-title">Recent Passwords</span>
-             <svg class="history-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-               <path d="M6 9l6 6 6-6"/>
-             </svg>
-         </button>
-         <div class="history-list" id="history-list">
-             <!-- History Items -->
-         </div>
-      </div>
+      <button class="history-header" id="history-header" aria-expanded="false">
+        <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span class="history-title">Password History</span>
+        <svg class="chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div class="history-list" id="history-list"></div>
+    </div>
     </div>
 
     <div class="options-panel">
@@ -592,8 +595,8 @@ export function renderPasswordGeneratorPage(): HTMLElement {
           </label>
           
           <div style="display: flex; gap: 8px; align-items: center;">
-             <input type="text" id="opt-static-string" class="static-input" placeholder="Static text..." aria-label="Static text to include">
-             <select id="opt-static-pos" class="static-select" aria-label="Static text position">
+             <input type="text" id="opt-static-string" class="static-input" placeholder="Static text..." aria-label="Static text to include" autocomplete="off" data-lpignore="true">
+             <select id="opt-static-pos" class="static-select" aria-label="Static text position" autocomplete="off">
                  <option value="start">Start</option>
                  <option value="middle">Middle</option>
                  <option value="end" selected>End</option>
@@ -603,7 +606,7 @@ export function renderPasswordGeneratorPage(): HTMLElement {
       </div>
     </div>
     
-    <div class="copy-feedback" id="copy-feedback" role="status" aria-live="polite">Copied to clipboard!</div>
+
   `;
 
   setupEventListeners(container);
@@ -611,8 +614,8 @@ export function renderPasswordGeneratorPage(): HTMLElement {
 }
 
 function setupEventListeners(container: HTMLElement): void {
-  const passwordText = container.querySelector('#password-text') as HTMLSpanElement;
-  const copyBtn = container.querySelector('#copy-btn') as HTMLButtonElement;
+  const passwordText = container.querySelector('#password-text') as HTMLDivElement;
+  const mainCopyBtn = container.querySelector('#main-copy-btn') as HTMLElement & { value: string };
   const generateBtn = container.querySelector('#generate-btn') as HTMLButtonElement;
   const lengthSlider = container.querySelector('#length-slider') as HTMLInputElement;
   const lengthValue = container.querySelector('#length-value') as HTMLSpanElement;
@@ -620,7 +623,7 @@ function setupEventListeners(container: HTMLElement): void {
   const strengthLabel = container.querySelector('#strength-label') as HTMLSpanElement;
   const strengthEntropy = container.querySelector('#strength-entropy') as HTMLSpanElement;
   const quantumBadge = container.querySelector('#quantum-badge') as HTMLSpanElement;
-  const copyFeedback = container.querySelector('#copy-feedback') as HTMLDivElement;
+  // const copyFeedback = container.querySelector('#copy-feedback') as HTMLDivElement; // Removed as lu-copy-to-clipboard handles its own feedback
 
   const optUppercase = container.querySelector('#opt-uppercase') as HTMLInputElement;
   const optLowercase = container.querySelector('#opt-lowercase') as HTMLInputElement;
@@ -648,6 +651,13 @@ function setupEventListeners(container: HTMLElement): void {
   // State
   const passwordHistory: string[] = [];
   const MAX_HISTORY = 5;
+
+  // Register cleanup hook
+  cleanupHook = () => {
+    passwordHistory.length = 0;
+    if (passwordText) passwordText.textContent = '';
+    if (optStaticString) optStaticString.value = '';
+  };
 
   const getOptions = (): PasswordOptions => ({
     length: parseInt(lengthSlider.value, 10),
@@ -691,15 +701,7 @@ function setupEventListeners(container: HTMLElement): void {
     renderHistory();
   };
 
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      copyFeedback.classList.add('visible');
-      setTimeout(() => copyFeedback.classList.remove('visible'), 2000);
-    } catch {
-      // fallback not essential for history demo but good practice
-    }
-  };
+
 
   const renderHistory = () => {
     if (passwordHistory.length === 0) {
@@ -717,10 +719,9 @@ function setupEventListeners(container: HTMLElement): void {
       passSpan.className = 'hist-pass';
       passSpan.textContent = pwd;
 
-      const copyBtn = document.createElement('button');
-      copyBtn.className = 'history-copy';
-      copyBtn.textContent = 'Copy';
-      copyBtn.onclick = () => copyToClipboard(pwd);
+      const copyBtn = document.createElement('lu-copy-to-clipboard') as HTMLElement & { value: string; label: string };
+      copyBtn.value = pwd;
+      copyBtn.setAttribute('label', 'Copy');
 
       item.appendChild(passSpan);
       item.appendChild(copyBtn);
@@ -746,15 +747,16 @@ function setupEventListeners(container: HTMLElement): void {
     try {
       const options = getOptions();
       const password = PasswordGenerator.generate(options);
-      // Adjust strength calculation by passing static string length 
       const staticLen = options.staticString ? options.staticString.value.length : 0;
       const strength = PasswordGenerator.calculateStrength(password, options.memorable, staticLen);
 
       passwordText.textContent = password;
+      mainCopyBtn.value = password; // Update copy component
       updateStrengthDisplay(strength);
       addToHistory(password);
     } catch (error) {
       passwordText.textContent = error instanceof Error ? error.message : 'Generation failed';
+      mainCopyBtn.value = ''; // Disable copy if failed
       updateStrengthDisplay({ score: 0, label: 'Very Weak', color: '#dc2626', entropy: 0, isQuantumSafe: false });
     }
   };
@@ -810,13 +812,7 @@ function setupEventListeners(container: HTMLElement): void {
     input.addEventListener('change', generatePassword);
   });
 
-  copyBtn.addEventListener('click', async () => {
-    const text = (passwordText.textContent || '').trim();
-    const isErrorLike = /error|invalid|failed|unable to generate/i.test(text);
-    if (!text || text.includes('Click Generate') || isErrorLike) return;
-
-    copyToClipboard(text);
-  });
+  // Removed manual copyBtn listener, component handles it.
 
   // Initial call
   try {
@@ -825,7 +821,9 @@ function setupEventListeners(container: HTMLElement): void {
     const staticLen = options.staticString ? options.staticString.value.length : 0;
     const strength = PasswordGenerator.calculateStrength(password, options.memorable, staticLen);
     passwordText.textContent = password;
+    mainCopyBtn.value = password;
     updateStrengthDisplay(strength);
     // Don't add initial to history
   } catch { }
 }
+

@@ -4,8 +4,10 @@ import '@libreutils/shared/styles/index.css';
 import { renderHomePage } from './pages/home';
 import { renderAboutPage } from './pages/about';
 import { renderNotFoundPage } from './pages/not-found';
-import { renderTextEncoderPage } from '../tools/text-encoder/src/page';
-import { renderPasswordGeneratorPage } from '../tools/password-generator/src/page';
+import { renderTextEncoderPage, secureCleanup as cleanupTextEncoder } from '../tools/text-encoder/src/page';
+import { renderPasswordGeneratorPage, secureCleanup as cleanupPasswordGenerator } from '../tools/password-generator/src/page';
+import { renderEncryptorPage, secureCleanup as cleanupEncryptor } from '../tools/encryption-decryption/src/page';
+import { renderChecksumPage } from '../tools/checksum-generator/src/page';
 
 function initTheme(): void {
     const stored = localStorage.getItem('lu-theme');
@@ -112,8 +114,29 @@ function showUpdateToast(version?: string): void {
 const routes: Route[] = [
     { path: '/', title: 'Home', render: renderHomePage },
     { path: '/about', title: 'About', render: renderAboutPage },
-    { path: '/tools/text-encoder', title: 'Text Encoder / Decoder', render: renderTextEncoderPage },
-    { path: '/tools/password-generator', title: 'Password Generator', render: renderPasswordGeneratorPage },
+    {
+        path: '/tools/text-encoder',
+        title: 'Text Encoder / Decoder',
+        render: renderTextEncoderPage,
+        onLeave: cleanupTextEncoder
+    },
+    {
+        path: '/tools/password-generator',
+        title: 'Password Generator',
+        render: renderPasswordGeneratorPage,
+        onLeave: cleanupPasswordGenerator
+    },
+    {
+        path: '/tools/encryption-decryption',
+        title: 'Encryptor / Decryptor',
+        render: renderEncryptorPage,
+        onLeave: cleanupEncryptor
+    },
+    {
+        path: '/tools/checksum-generator',
+        title: 'Checksum Generator',
+        render: renderChecksumPage
+    },
 ];
 
 function init(): void {
