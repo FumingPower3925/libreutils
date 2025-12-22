@@ -19,8 +19,8 @@ function fromBig(
 
 function split(lst: bigint[], le = false): Uint32Array[] {
   const len = lst.length;
-  let Ah = new Uint32Array(len);
-  let Al = new Uint32Array(len);
+  const Ah = new Uint32Array(len);
+  const Al = new Uint32Array(len);
   for (let i = 0; i < len; i++) {
     const { h, l } = fromBig(lst[i], le);
     [Ah[i], Al[i]] = [h, l];

@@ -33,12 +33,14 @@ export function ahash(h: IHash): void {
 }
 
 /** Asserts a hash instance has not been destroyed / finished */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function aexists(instance: any, checkFinished = true): void {
   if (instance.destroyed) throw new Error('Hash instance has been destroyed');
   if (checkFinished && instance.finished) throw new Error('Hash#digest() has already been called');
 }
 
 /** Asserts output is properly-sized byte array */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function aoutput(out: any, instance: any): void {
   abytes(out);
   const min = instance.outputLen;
@@ -118,8 +120,8 @@ export const swap32IfBE: (u: Uint32Array) => Uint32Array = isLE
 
 // Built-in hex conversion https://caniuse.com/mdn-javascript_builtins_uint8array_fromhex
 const hasHexBuiltin: boolean = /* @__PURE__ */ (() =>
-  // @ts-ignore
-  typeof Uint8Array.from([]).toHex === 'function' && typeof Uint8Array.fromHex === 'function')();
+  typeof (Uint8Array.prototype as unknown as { toHex?: () => string }).toHex === 'function' &&
+  typeof (Uint8Array as unknown as { fromHex?: (s: string) => Uint8Array }).fromHex === 'function')();
 
 // Array where index 0xf0 (240) is mapped to string 'f0'
 const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) =>
@@ -132,8 +134,7 @@ const hexes = /* @__PURE__ */ Array.from({ length: 256 }, (_, i) =>
  */
 export function bytesToHex(bytes: Uint8Array): string {
   abytes(bytes);
-  // @ts-ignore
-  if (hasHexBuiltin) return bytes.toHex();
+  if (hasHexBuiltin) return (bytes as unknown as { toHex: () => string }).toHex();
   // pre-caching improves the speed 6x
   let hex = '';
   for (let i = 0; i < bytes.length; i++) {
@@ -157,8 +158,7 @@ function asciiToBase16(ch: number): number | undefined {
  */
 export function hexToBytes(hex: string): Uint8Array {
   if (typeof hex !== 'string') throw new Error('hex string expected, got ' + typeof hex);
-  // @ts-ignore
-  if (hasHexBuiltin) return Uint8Array.fromHex(hex);
+  if (hasHexBuiltin) return (Uint8Array as unknown as { fromHex: (s: string) => Uint8Array }).fromHex(hex);
   const hl = hex.length;
   const al = hl / 2;
   if (hl % 2) throw new Error('hex string expected, got unpadded hex of length ' + hl);
@@ -200,8 +200,8 @@ export async function asyncLoop(
 }
 
 // Global symbols, but ts doesn't see them: https://github.com/microsoft/TypeScript/issues/31535
-declare const TextEncoder: any;
-declare const TextDecoder: any;
+declare const TextEncoder: { new(): { encode(input: string): Uint8Array } };
+declare const TextDecoder: { new(): { decode(input: Uint8Array): string } };
 
 /**
  * Converts string to bytes using UTF8 encoding.
@@ -262,7 +262,7 @@ export function concatBytes(...arrays: Uint8Array[]): Uint8Array {
   return res;
 }
 
-type EmptyObj = {};
+type EmptyObj = Record<string, unknown>;
 export function checkOpts<T1 extends EmptyObj, T2 extends EmptyObj>(
   defaults: T1,
   opts?: T2
@@ -278,7 +278,8 @@ export type IHash = {
   (data: Uint8Array): Uint8Array;
   blockLen: number;
   outputLen: number;
-  create: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  create: () => any;
 };
 
 /** For runtime check if class implements interface */
@@ -342,7 +343,7 @@ export function createHasher<T extends Hash<T>>(
   return hashC;
 }
 
-export function createOptHasher<H extends Hash<H>, T extends Object>(
+export function createOptHasher<H extends Hash<H>, T extends object>(
   hashCons: (opts?: T) => Hash<H>
 ): {
   (msg: Input, opts?: T): Uint8Array;
@@ -358,7 +359,7 @@ export function createOptHasher<H extends Hash<H>, T extends Object>(
   return hashC;
 }
 
-export function createXOFer<H extends HashXOF<H>, T extends Object>(
+export function createXOFer<H extends HashXOF<H>, T extends object>(
   hashCons: (opts?: T) => HashXOF<H>
 ): {
   (msg: Input, opts?: T): Uint8Array;

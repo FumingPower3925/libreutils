@@ -44,8 +44,8 @@ export class ChecksumTool {
             try {
                 const hashBuffer = await crypto.subtle.digest(algorithm, data as BufferSource);
                 return this.bytesToHex(new Uint8Array(hashBuffer));
-            } catch (e) {
-                // Fallback
+            } catch {
+                // Web Crypto failed, fallback to vendored implementation
             }
         }
 
@@ -77,7 +77,7 @@ export class ChecksumTool {
             const fileSize = file.size;
             let offset = 0;
 
-            let hasher: any;
+            let hasher: { update(data: Uint8Array): void; digest(): Uint8Array };
             switch (algorithm) {
                 case 'MD5': hasher = md5.create(); break;
                 case 'SHA-1': hasher = sha1.create(); break;
@@ -112,7 +112,7 @@ export class ChecksumTool {
                 }
             };
 
-            reader.onerror = (e) => reject(new Error('File read error'));
+            reader.onerror = () => reject(new Error('Failed to read file chunk during hash calculation'));
 
             function readNextChunk() {
                 const slice = file.slice(offset, offset + chunkSize);

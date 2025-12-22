@@ -46,6 +46,8 @@ export function renderChecksumPage(): HTMLElement {
       
       .textarea { width: 100%; min-height: 100px; padding: 0.75rem; border: 1px solid var(--lu-border); border-radius: 0.5rem; background: var(--lu-bg-card); color: var(--lu-text-primary); }
       
+      .text-input { width: 100%; padding: 0.75rem; border: 1px solid var(--lu-border); border-radius: 0.5rem; background: var(--lu-bg-card); color: var(--lu-text-primary); }
+      
       /* Wrapper for custom select chevron positioning */
       .select-wrapper {
           position: relative;
@@ -183,7 +185,7 @@ export function renderChecksumPage(): HTMLElement {
 
         <div class="input-group">
            <label class="label">Expected Hash</label>
-           <input type="text" class="select" id="ver-hash-input" placeholder="Paste hash here (we'll auto-detect the algorithm)">
+           <input type="text" class="text-input" id="ver-hash-input" placeholder="Paste hash here (we'll auto-detect the algorithm)">
         </div>
 
         <button class="btn" id="ver-btn">Verify Integrity</button>
@@ -312,7 +314,7 @@ function setupEventListeners(container: HTMLElement) {
                     <div class="algo-header">
                         <span class="algo-name">
                             ${r.algo}
-                            ${r.insecure ? `<span class="badge-insecure" title="This algorithm is considered securely broken">${ICONS.alert} Insecure</span>` : ''}
+                            ${r.insecure ? `<span class="badge-insecure" title="This algorithm is cryptographically broken">${ICONS.alert} Insecure</span>` : ''}
                         </span>
                         <lu-copy-to-clipboard label="Copy" text="${r.hash}"></lu-copy-to-clipboard>
                     </div>
@@ -320,8 +322,9 @@ function setupEventListeners(container: HTMLElement) {
                 </div>
             `).join('');
 
-        } catch (err: any) {
-            alert(`Error: ${err.message}`);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            alert(`Error: ${message}`);
         } finally {
             genBtn.disabled = false;
             genProgress.style.display = 'none';
@@ -382,8 +385,9 @@ function setupEventListeners(container: HTMLElement) {
                  `;
             }
 
-        } catch (err: any) {
-            alert(`Error: ${err.message}`);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            alert(`Error: ${message}`);
         } finally {
             verBtn.disabled = false;
             verProgress.style.display = 'none';

@@ -1,5 +1,5 @@
 
-import { describe, it, expect, beforeAll } from "bun:test";
+import { describe, it, expect } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 
 if (!global.window) {
