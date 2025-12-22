@@ -7,12 +7,19 @@ import '../types.d.ts';
  */
 
 function escapeHtml(text: string): string {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  return text.replace(/[&<>"']/g, (ch) => {
+    switch (ch) {
+      case '&': return '&amp;';
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '"': return '&quot;';
+      case "'": return '&#39;';
+      default: return ch;
+    }
+  });
 }
 
-// Types are now in shared/src/types.d.ts
+// File System Access API type definitions are centralized in shared/src/types.d.ts for reuse across components.
 
 export class LuDownloadButton extends HTMLElement {
   static tagName = 'lu-download-button';
@@ -80,10 +87,10 @@ export class LuDownloadButton extends HTMLElement {
     const filename = this.getAttribute('filename') || this._filename || 'download.txt';
     const mimeType = this.getAttribute('mime-type') || this._mimeType || 'text/plain';
 
-    const blobContent = typeof content === 'string'
+    const blobParts = typeof content === 'string'
       ? [content]
       : [content as unknown as BlobPart];
-    const blob = new Blob(blobContent, { type: mimeType });
+    const blob = new Blob(blobParts, { type: mimeType });
 
     const ext = filename.split('.').pop() || 'txt';
     const accept: Record<string, string[]> = {};
@@ -102,23 +109,35 @@ export class LuDownloadButton extends HTMLElement {
         await writable.write(blob);
         await writable.close();
         return;
-      } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') return;
+      } catch (err: unknown) {
+        if (err && typeof err === 'object') {
+          const anyErr = err as { name?: string };
+          if (anyErr.name === 'AbortError') return;
+        }
+        throw err;
       }
     }
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 0);
+    let url: string | undefined;
+    let a: HTMLAnchorElement | null = null;
+    try {
+      url = URL.createObjectURL(blob);
+      a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+    } catch (error) {
+      console.error('Download failed:', error);
+    } finally {
+      if (url && a) {
+        setTimeout(() => {
+          if (a && a.parentNode) a.parentNode.removeChild(a);
+          URL.revokeObjectURL(url as string);
+        }, 0);
+      }
+    }
   }
 
   private render(): void {

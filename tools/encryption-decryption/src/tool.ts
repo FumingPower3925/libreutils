@@ -351,7 +351,7 @@ export class EncryptorTool {
         } catch (error: unknown) {
             if (error instanceof Error) {
                 throw new Error(
-                    `Decryption failed due to incorrect password or corrupted data. Details: ${error.message}`,
+                    'Decryption failed due to incorrect password or corrupted data',
                     { cause: error }
                 );
             }

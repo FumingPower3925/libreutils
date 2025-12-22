@@ -51,10 +51,12 @@ const secureRandomString = (length: number): string => {
       result += charset[randomValues[i] % charsetLen];
     }
   } else {
-    // Fallback to Math.random if crypto is not available.
+    // In environments without Web Crypto, fall back to a fixed pattern instead
+    // of Math.random(). This does not provide cryptographic security and is
+    // only a best-effort overwrite before clearing the value.
+    const fillChar = '0';
     for (let i = 0; i < length; i++) {
-      const idx = Math.floor(Math.random() * charsetLen);
-      result += charset[idx];
+      result += fillChar;
     }
   }
 
@@ -116,10 +118,26 @@ function getMimeType(ext: string): string {
     html: 'text/html',
     css: 'text/css',
     js: 'text/javascript',
+    mjs: 'text/javascript',
+    jsx: 'text/jsx',
+    ts: 'application/typescript',
+    tsx: 'text/tsx',
     json: 'application/json',
     xml: 'application/xml',
     csv: 'text/csv',
     md: 'text/markdown',
+    py: 'text/x-python',
+    java: 'text/x-java-source',
+    c: 'text/x-c',
+    h: 'text/x-c',
+    cpp: 'text/x-c++',
+    hpp: 'text/x-c++',
+    cs: 'text/x-csharp',
+    go: 'text/x-go',
+    rs: 'text/rust',
+    php: 'text/x-php',
+    rb: 'text/x-ruby',
+    sh: 'text/x-shellscript',
   };
   return mimeMap[ext] || 'application/octet-stream';
 }
@@ -878,6 +896,11 @@ function setupEventListeners(container: HTMLElement): void {
     fileDropZone.classList.remove('visible');
     fileInfo.classList.add('visible');
 
+    // Check for large files
+    if (file.size > 100 * 1024 * 1024) {
+      showError('Warning: You are processing a large file (>100MB). This may cause performance issues or browser crashes as the entire file is loaded into memory.');
+    }
+
     // Read file data
     const buffer = await file.arrayBuffer();
     fileData = new Uint8Array(buffer);
@@ -930,7 +953,7 @@ function setupEventListeners(container: HTMLElement): void {
   actionBtn.addEventListener('click', async () => {
     clearMessages();
 
-    const pwd = password.value;
+    let pwd = password.value;
 
     if (!pwd) {
       showError('Password is required');
@@ -1013,25 +1036,44 @@ function setupEventListeners(container: HTMLElement): void {
         // Decrypt with metadata to get original filename
         const { data: decrypted, filename: originalFilename, mimeType: originalMimeType } = await EncryptorTool.decryptWithMetadata(input, pwd);
 
-        // Check if data looks like valid UTF-8 text (heuristic)
+        // Try to detect whether the decrypted data is text by attempting UTF-8 decoding
+        let decodedText: string | null = null;
         const isLikelyText = (() => {
-          // Check first 1024 bytes for text characteristics
-          const sample = decrypted.slice(0, 1024);
-          let printableCount = 0;
+          try {
+            // Use fatal decoding so invalid UTF-8 sequences cause an error
+            const decoder = new TextDecoder('utf-8', { fatal: true });
+            decodedText = decoder.decode(decrypted);
+          } catch {
+            decodedText = null;
+            return false;
+          }
+
+          if (!decodedText) {
+            return false;
+          }
+
+          // Analyze a sample of the decoded text for control characters
+          const sample = decodedText.slice(0, 2048);
+          let controlCount = 0;
           for (let i = 0; i < sample.length; i++) {
-            const byte = sample[i];
-            // ASCII printable (32-126), newline, tab, carriage return
-            if ((byte >= 32 && byte <= 126) || byte === 10 || byte === 13 || byte === 9) {
-              printableCount++;
+            const code = sample.charCodeAt(i);
+            // Reject if we see any NUL bytes
+            if (code === 0) {
+              return false;
+            }
+            // Count non-whitespace control characters
+            if (code < 32 && code !== 9 && code !== 10 && code !== 13) {
+              controlCount++;
             }
           }
-          // If >90% are printable characters, likely text
-          return (printableCount / sample.length) > 0.9;
+
+          // If less than 5% of characters are non-whitespace control chars, treat as text
+          return sample.length === 0 ? false : (controlCount / sample.length) < 0.05;
         })();
 
-        if (isLikelyText) {
+        if (isLikelyText && decodedText !== null) {
           // Text data
-          result = new TextDecoder().decode(decrypted);
+          result = decodedText;
           if (result.length > MAX_TEXT_DISPLAY_SIZE) {
             outputText.value = '[Output too large to display. Use the Download button to save the decrypted data.]';
             copyOutputBtn.value = '';
@@ -1068,6 +1110,8 @@ function setupEventListeners(container: HTMLElement): void {
       // Enhance security by scrubbing password inputs after operation
       scrubValueElement(password);
       scrubValueElement(confirmPassword);
+      // Clear local password variable
+      pwd = '';
     }
   });
 
