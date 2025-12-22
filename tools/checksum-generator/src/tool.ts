@@ -1,10 +1,9 @@
-
-import { sha256 } from '@noble/hashes/sha256';
-import { sha512 } from '@noble/hashes/sha512';
-import { sha1 } from '@noble/hashes/sha1';
-import { blake2b } from '@noble/hashes/blake2b';
+import { sha256 } from './lib/noble/sha256';
+import { sha512 } from './lib/noble/sha512';
+import { sha1 } from './lib/noble/sha1';
+import { blake2b } from './lib/noble/blake2b';
 // @ts-ignore
-import SparkMD5 from 'spark-md5';
+import SparkMD5 from './lib/spark-md5.js';
 
 export type ChecksumAlgorithm = 'MD5' | 'SHA-1' | 'SHA-256' | 'SHA-512' | 'BLAKE2b';
 
@@ -54,7 +53,7 @@ export class ChecksumTool {
         switch (algorithm) {
             case 'MD5': {
                 const spark = new SparkMD5.ArrayBuffer();
-                spark.append(data);
+                spark.append(data.buffer as ArrayBuffer);
                 return spark.end();
             }
             case 'SHA-1':
