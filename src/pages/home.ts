@@ -162,7 +162,8 @@ export function renderHomePage(): HTMLElement {
       .tools-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: var(--lu-space-6, 1.5rem);
+        gap: var(--lu-space-8, 2rem);
+        padding-bottom: var(--lu-space-8, 2rem);
       }
       .empty-state {
         text-align: center;

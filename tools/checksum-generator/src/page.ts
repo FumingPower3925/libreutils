@@ -46,16 +46,35 @@ export function renderChecksumPage(): HTMLElement {
       
       .textarea { width: 100%; min-height: 100px; padding: 0.75rem; border: 1px solid var(--lu-border); border-radius: 0.5rem; background: var(--lu-bg-card); color: var(--lu-text-primary); }
       
-      /* Fixed: Pointer cursor and padding for chevron */
+      /* Wrapper for custom select chevron positioning */
+      .select-wrapper {
+          position: relative;
+          width: 100%;
+      }
+      
       .select { 
           width: 100%; 
           padding: 0.75rem; 
-          padding-right: 2.5rem; /* Space for chevron */
+          padding-right: 3rem; /* Extra space for chevron */
           border: 1px solid var(--lu-border); 
           border-radius: 0.5rem; 
           background: var(--lu-bg-card); 
           color: var(--lu-text-primary); 
           cursor: pointer;
+          appearance: none;
+          -webkit-appearance: none;
+          -moz-appearance: none;
+      }
+      
+      .select-chevron {
+          position: absolute;
+          right: 1.25rem; /* Generous spacing from right edge */
+          top: 50%;
+          transform: translateY(-50%);
+          width: 1.25rem;
+          height: 1.25rem;
+          pointer-events: none;
+          color: var(--lu-text-secondary);
       }
       
       .btn { width: 100%; padding: 0.75rem; background: var(--lu-primary-500); color: white; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
@@ -65,9 +84,6 @@ export function renderChecksumPage(): HTMLElement {
       .result-box { margin-top: 1.5rem; padding: 1rem; background: var(--lu-bg-secondary); border-radius: 0.5rem; display: none; }
       .result-box.visible { display: block; }
       
-      .verification-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; }
-      .badge-success { background: var(--lu-success-light); color: var(--lu-success); }
-      .badge-error { background: var(--lu-error-light); color: var(--lu-error); }
       .badge-insecure { 
           font-size: 0.7rem; 
           background: #ffe4e6; 
@@ -89,12 +105,12 @@ export function renderChecksumPage(): HTMLElement {
       .algo-header { display: flex; justify-content: space-between; align-items: center; }
       .algo-name { font-weight: 600; display: flex; align-items: center; }
       
-      /* Fixed: Smaller font and word break for hashes */
       .algo-hash { 
           font-family: monospace; 
           font-size: 0.85rem; 
           word-break: break-all;
           color: var(--lu-text-secondary);
+          margin-top: 0.25rem;
       }
     </style>
 
@@ -139,10 +155,13 @@ export function renderChecksumPage(): HTMLElement {
 
         <div class="input-group">
           <label class="label">Algorithm</label>
-          <select class="select" id="gen-algo">
-             ${CHECKSUM_ALGORITHMS.map(a => `<option value="${a.id}">${a.name}</option>`).join('')}
-             <option value="ALL">Calculate ALL Algorithms</option>
-          </select>
+          <div class="select-wrapper">
+              <select class="select" id="gen-algo">
+                 ${CHECKSUM_ALGORITHMS.map(a => `<option value="${a.id}">${a.name}</option>`).join('')}
+                 <option value="ALL">Calculate ALL Algorithms</option>
+              </select>
+              <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
         </div>
 
         <button class="btn" id="gen-btn">Generate Hash</button>
@@ -181,7 +200,7 @@ export function renderChecksumPage(): HTMLElement {
 }
 
 function setupEventListeners(container: HTMLElement) {
-    // Tabs
+    // Tabs...
     const tabs = container.querySelectorAll('.tab');
     const sections = container.querySelectorAll('.mode-section');
     tabs.forEach(tab => {
@@ -298,7 +317,7 @@ function setupEventListeners(container: HTMLElement) {
                             ${r.algo}
                             ${r.insecure ? `<span class="badge-insecure" title="This algorithm is considered securely broken">${ICONS.alert} Insecure</span>` : ''}
                         </span>
-                        <lu-copy-to-clipboard label="Copy" content="${r.hash}"></lu-copy-to-clipboard>
+                        <lu-copy-to-clipboard label="Copy" text="${r.hash}"></lu-copy-to-clipboard>
                     </div>
                     <div class="algo-hash">${r.hash}</div>
                 </div>
