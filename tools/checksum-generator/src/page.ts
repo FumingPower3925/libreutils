@@ -13,7 +13,8 @@ const ICONS = {
     file: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`,
     check: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
     x: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
-    upload: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`
+    upload: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
+    alert: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`
 };
 
 export function renderChecksumPage(): HTMLElement {
@@ -45,32 +46,65 @@ export function renderChecksumPage(): HTMLElement {
       
       .textarea { width: 100%; min-height: 100px; padding: 0.75rem; border: 1px solid var(--lu-border); border-radius: 0.5rem; background: var(--lu-bg-card); color: var(--lu-text-primary); }
       
-      .select { width: 100%; padding: 0.75rem; border: 1px solid var(--lu-border); border-radius: 0.5rem; background: var(--lu-bg-card); color: var(--lu-text-primary); }
+      /* Fixed: Pointer cursor and padding for chevron */
+      .select { 
+          width: 100%; 
+          padding: 0.75rem; 
+          padding-right: 2.5rem; /* Space for chevron */
+          border: 1px solid var(--lu-border); 
+          border-radius: 0.5rem; 
+          background: var(--lu-bg-card); 
+          color: var(--lu-text-primary); 
+          cursor: pointer;
+      }
       
       .btn { width: 100%; padding: 0.75rem; background: var(--lu-primary-500); color: white; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
       .btn:hover { background: var(--lu-primary-600); }
       .btn:disabled { background: var(--lu-text-muted); cursor: not-allowed; }
       
-      .result-box { margin-top: 1.5rem; padding: 1rem; background: var(--lu-bg-secondary); border-radius: 0.5rem; word-break: break-all; font-family: monospace; display: none; }
+      .result-box { margin-top: 1.5rem; padding: 1rem; background: var(--lu-bg-secondary); border-radius: 0.5rem; display: none; }
       .result-box.visible { display: block; }
       
       .verification-badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; }
       .badge-success { background: var(--lu-success-light); color: var(--lu-success); }
       .badge-error { background: var(--lu-error-light); color: var(--lu-error); }
+      .badge-insecure { 
+          font-size: 0.7rem; 
+          background: #ffe4e6; 
+          color: #be123c; 
+          padding: 2px 6px; 
+          border-radius: 4px; 
+          margin-left: 0.5rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 2px;
+      }
       
       .progress-bar { height: 4px; background: var(--lu-bg-secondary); border-radius: 2px; overflow: hidden; margin-top: 0.5rem; display: none; }
       .progress-fill { height: 100%; background: var(--lu-primary-500); width: 0%; transition: width 0.1s; }
       
-      .algo-result-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-bottom: 1px solid var(--lu-border); }
-      .algo-name { font-weight: 600; width: 100px; }
-      .algo-hash { font-family: monospace; flex: 1; text-align: right; padding-right: 1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .algo-result-item { display: flex; flex-direction: column; padding: 0.75rem; border-bottom: 1px solid var(--lu-border); gap: 0.25rem; }
+      .algo-result-item:last-child { border-bottom: none; }
+      
+      .algo-header { display: flex; justify-content: space-between; align-items: center; }
+      .algo-name { font-weight: 600; display: flex; align-items: center; }
+      
+      /* Fixed: Smaller font and word break for hashes */
+      .algo-hash { 
+          font-family: monospace; 
+          font-size: 0.85rem; 
+          word-break: break-all;
+          color: var(--lu-text-secondary);
+      }
     </style>
 
     <header class="header">
       <h1 class="title">${ICONS.hash} Checksum Generator</h1>
       <p class="subtitle">Generate and verify file hashes</p>
       <div style="font-size: 0.8rem; color: var(--lu-text-muted); margin-top: 0.5rem;">
-        Powered by <a href="https://github.com/paulmillr/noble-hashes" target="_blank" style="color:inherit; text-decoration:underline;">noble-hashes</a> (Zero Dependency)
+        Powered by <a href="https://github.com/paulmillr/noble-hashes" target="_blank" style="color:inherit; text-decoration:underline;">noble-hashes</a>.
+        <br>
+        100% Local Execution (Zero External Dependencies).
       </div>
     </header>
 
@@ -240,9 +274,10 @@ function setupEventListeners(container: HTMLElement) {
 
         try {
             const algorithms = isAll ? CHECKSUM_ALGORITHMS.map(a => a.id) : [algo as ChecksumAlgorithm];
-            const results: { algo: string, hash: string }[] = [];
+            const results: { algo: string, hash: string, insecure?: boolean }[] = [];
 
             for (const alg of algorithms) {
+                const algoDef = CHECKSUM_ALGORITHMS.find(a => a.id === alg);
                 let hash = '';
                 if (isFileMode && fileInput) {
                     hash = await ChecksumTool.calculateFile(fileInput, alg as ChecksumAlgorithm, (p) => {
@@ -251,16 +286,21 @@ function setupEventListeners(container: HTMLElement) {
                 } else {
                     hash = await ChecksumTool.calculateText(textInput, alg as ChecksumAlgorithm);
                 }
-                results.push({ algo: alg, hash });
+                results.push({ algo: alg, hash, insecure: algoDef?.insecure });
             }
 
             // Render results
             genResult.classList.add('visible');
             genResult.innerHTML = results.map(r => `
                 <div class="algo-result-item">
-                    <span class="algo-name">${r.algo}</span>
-                    <span class="algo-hash">${r.hash}</span>
-                    <lu-copy-to-clipboard label="" content="${r.hash}"></lu-copy-to-clipboard>
+                    <div class="algo-header">
+                        <span class="algo-name">
+                            ${r.algo}
+                            ${r.insecure ? `<span class="badge-insecure" title="This algorithm is considered securely broken">${ICONS.alert} Insecure</span>` : ''}
+                        </span>
+                        <lu-copy-to-clipboard label="Copy" content="${r.hash}"></lu-copy-to-clipboard>
+                    </div>
+                    <div class="algo-hash">${r.hash}</div>
                 </div>
             `).join('');
 

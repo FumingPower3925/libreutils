@@ -9,11 +9,12 @@ export interface AlgorithmOption {
     id: ChecksumAlgorithm;
     name: string;
     description: string;
+    insecure?: boolean;
 }
 
 export const CHECKSUM_ALGORITHMS: AlgorithmOption[] = [
-    { id: 'MD5', name: 'MD5', description: 'Legacy, commonly used (insecure)' },
-    { id: 'SHA-1', name: 'SHA-1', description: 'Legacy, commonly used (weak)' },
+    { id: 'MD5', name: 'MD5', description: 'Legacy, commonly used (insecure)', insecure: true },
+    { id: 'SHA-1', name: 'SHA-1', description: 'Legacy, commonly used (weak)', insecure: true },
     { id: 'SHA-256', name: 'SHA-256', description: 'Secure standard' },
     { id: 'SHA-384', name: 'SHA-384', description: 'Secure (NSA)' },
     { id: 'SHA-512', name: 'SHA-512', description: 'High security' },

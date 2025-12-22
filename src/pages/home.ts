@@ -28,6 +28,14 @@ const tools: ToolMeta[] = [
     icon: 'lock',
     keywords: ['encrypt', 'decrypt', 'AES', 'ChaCha20', 'secure', 'cipher', 'crypto', 'password', 'file'],
   },
+  {
+    id: 'checksum-generator',
+    name: 'Checksum Generator',
+    description: 'Generate and verify file hashes (MD5, SHA-256, BLAKE3) to ensure data integrity.',
+    category: 'file',
+    icon: 'hash',
+    keywords: ['hash', 'checksum', 'md5', 'sha', 'blake3', 'verify', 'integrity'],
+  },
 ];
 
 const categories = [
