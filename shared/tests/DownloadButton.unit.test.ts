@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, spyOn, mock, beforeAll } from "bun:test";
+import { describe, it, expect, beforeEach, afterEach, spyOn, mock } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 import type { LuDownloadButton as LuDownloadButtonType } from "../src/components/DownloadButton";
 

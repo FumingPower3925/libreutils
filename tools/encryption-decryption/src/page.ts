@@ -1110,8 +1110,6 @@ function setupEventListeners(container: HTMLElement): void {
       // Enhance security by scrubbing password inputs after operation
       scrubValueElement(password);
       scrubValueElement(confirmPassword);
-      // Clear local password variable
-      pwd = '';
     }
   });
 

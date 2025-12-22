@@ -13,7 +13,7 @@ class MockHTMLElement {
         toggle: () => { }
     };
     public tagName: string;
-    public listeners: Record<string, Function> = {};
+    public listeners: Record<string, () => void> = {};
     public children: MockHTMLElement[] = [];
 
     constructor(tagName: string = 'div') {
@@ -21,10 +21,11 @@ class MockHTMLElement {
     }
 
     getAttribute(_name: string) { return null; }
-    setAttribute(_name: string, _value: string) { void _name; void _value; }
-    querySelector(_selector: string) { void _selector; return new MockHTMLElement(); }
+    setAttribute(_name: string, _value: string) { /* unused */ }
+    querySelector(_selector: string) { return new MockHTMLElement(); }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     appendChild(child: any) { this.children.push(child); return child; }
-    addEventListener(event: string, handler: Function) {
+    addEventListener(event: string, handler: () => void) {
         this.listeners[event] = handler;
     }
     click() {
@@ -47,6 +48,7 @@ describe('TextEncoder Page Cleanup', () => {
             body: { appendChild: () => { } },
             execCommand: () => { }
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         global.document = docMock as any;
 
         // We need to intercept querySelector checks inside setupEventListeners
@@ -69,7 +71,6 @@ describe('TextEncoder Page Cleanup', () => {
 
         // 2. Mock container.querySelector to return our specific mocks
         const container = new MockHTMLElement('div');
-        const originalQuerySelector = container.querySelector;
 
         container.querySelector = (selector: string) => {
             if (selector === '#input-text') return mockInput;
@@ -88,10 +89,11 @@ describe('TextEncoder Page Cleanup', () => {
         // It creates: const container = document.createElement('div');
         // We can verify if document.createElement works as we mocked.
 
-        // Adjust mock document.createElement to return our special container for the page
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         global.document.createElement = ((tag: string) => {
             if (tag === 'div') return container;
             return new MockHTMLElement(tag);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         }) as any;
         // 4. Render page -> initializes hooks
         renderTextEncoderPage();

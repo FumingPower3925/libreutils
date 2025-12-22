@@ -48,6 +48,7 @@ describe('PasswordGenerator Page Cleanup', () => {
                 return new MockHTMLElement();
             },
         };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         global.document = docMock as any;
     });
 
@@ -74,10 +75,11 @@ describe('PasswordGenerator Page Cleanup', () => {
             return new MockHTMLElement();
         };
 
-        // Override createElement for this run
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         global.document.createElement = ((tag: string) => {
             if (tag === 'div') return mockContainer;
             return new MockHTMLElement();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         }) as any;
 
         // 3. Render
