@@ -19,6 +19,8 @@ No server uploads · No tracking · No ads · Open Source (AGPL-3.0)
 |------|-------------|--------|
 | Text Encoder | Encode/decode text (Base64, URL, HTML entities, etc.) | Ready |
 | Password Generator | Secure, unique, and memorable password generation | Ready |
+| Encryptor / Decryptor | AES-GCM and ChaCha20 encryption for text and files | Ready |
+| Checksum Generator | Generate and verify file hashes (MD5, SHA-1/256/384/512, BLAKE3) | Ready |
 
 ## Quick Start
 
@@ -92,6 +94,8 @@ The shared package provides CSS variables, typography, spacing, and component st
 - `<lu-header>` - Site header with navigation and theme toggle
 - `<lu-footer>` - Site footer
 - `<lu-card>` - Tool card
+- `<lu-copy-to-clipboard>` - Copy button with visual feedback
+- `<lu-download-button>` - File download with File System Access API support
 
 ## Privacy
 
