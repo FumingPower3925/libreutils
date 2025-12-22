@@ -67,8 +67,9 @@ describe('Checksum Generator UI', () => {
         await new Promise(resolve => setTimeout(resolve, 200));
 
         const resultBox = container.querySelector('#gen-result') as HTMLElement;
-        // Should contain result items for MD5, SHA-1, SHA-256, SHA-512
+        // Should contain result items for MD5, SHA-1, SHA-256, SHA-384, SHA-512, BLAKE3
         expect(resultBox.querySelectorAll('.algo-result-item').length).toBeGreaterThan(1);
-        expect(resultBox.innerHTML).toContain('SHA-256');
+        expect(resultBox.innerHTML).toContain('SHA-512');
+        expect(resultBox.innerHTML).toContain('BLAKE3');
     });
 });

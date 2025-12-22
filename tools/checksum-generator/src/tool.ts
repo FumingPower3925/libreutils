@@ -1,8 +1,9 @@
 
-import { sha256, sha512 } from './lib/noble/sha2';
+import { sha256, sha512, sha384 } from './lib/noble/sha2';
 import { sha1, md5 } from './lib/noble/legacy';
+import { blake3 } from './lib/noble/blake3';
 
-export type ChecksumAlgorithm = 'MD5' | 'SHA-1' | 'SHA-256' | 'SHA-512';
+export type ChecksumAlgorithm = 'MD5' | 'SHA-1' | 'SHA-256' | 'SHA-384' | 'SHA-512' | 'BLAKE3';
 
 export interface AlgorithmOption {
     id: ChecksumAlgorithm;
@@ -14,7 +15,9 @@ export const CHECKSUM_ALGORITHMS: AlgorithmOption[] = [
     { id: 'MD5', name: 'MD5', description: 'Legacy, commonly used (insecure)' },
     { id: 'SHA-1', name: 'SHA-1', description: 'Legacy, commonly used (weak)' },
     { id: 'SHA-256', name: 'SHA-256', description: 'Secure standard' },
+    { id: 'SHA-384', name: 'SHA-384', description: 'Secure (NSA)' },
     { id: 'SHA-512', name: 'SHA-512', description: 'High security' },
+    { id: 'BLAKE3', name: 'BLAKE3', description: 'Ultra fast (next-gen)' },
 ];
 
 export class ChecksumTool {
@@ -35,14 +38,13 @@ export class ChecksumTool {
      * Calculate hash for byte array
      */
     static async calculateBytes(data: Uint8Array, algorithm: ChecksumAlgorithm): Promise<string> {
-        // Web Crypto Optimization for SHA family (MD5 not supported)
-        if (algorithm !== 'MD5' && crypto.subtle) {
+        // Web Crypto Optimization for SHA family
+        if (['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512'].includes(algorithm) && crypto.subtle) {
             try {
-                // Algo names map directly: SHA-1, SHA-256, SHA-512
                 const hashBuffer = await crypto.subtle.digest(algorithm, data as BufferSource);
                 return this.bytesToHex(new Uint8Array(hashBuffer));
             } catch (e) {
-                // Fallback to JS implementation
+                // Fallback
             }
         }
 
@@ -51,7 +53,9 @@ export class ChecksumTool {
             case 'MD5': hasher = md5.create(); break;
             case 'SHA-1': hasher = sha1.create(); break;
             case 'SHA-256': hasher = sha256.create(); break;
+            case 'SHA-384': hasher = sha384.create(); break;
             case 'SHA-512': hasher = sha512.create(); break;
+            case 'BLAKE3': hasher = blake3.create({}); break;
             default: throw new Error(`Unknown algorithm: ${algorithm}`);
         }
 
@@ -77,7 +81,9 @@ export class ChecksumTool {
                 case 'MD5': hasher = md5.create(); break;
                 case 'SHA-1': hasher = sha1.create(); break;
                 case 'SHA-256': hasher = sha256.create(); break;
+                case 'SHA-384': hasher = sha384.create(); break;
                 case 'SHA-512': hasher = sha512.create(); break;
+                case 'BLAKE3': hasher = blake3.create({}); break;
                 default:
                     reject(new Error(`Unknown algorithm: ${algorithm}`));
                     return;
