@@ -37,6 +37,13 @@
         "@libreutils/shared": "file:../../shared",
       },
     },
+    "tools/password-generator": {
+      "name": "@libreutils/tool-password-generator",
+      "version": "0.1.0",
+      "dependencies": {
+        "@libreutils/shared": "file:../../shared",
+      },
+    },
     "tools/text-encoder": {
       "name": "@libreutils/tool-text-encoder",
       "version": "0.1.3",

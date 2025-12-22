@@ -18,6 +18,7 @@ No server uploads · No tracking · No ads · Open Source (AGPL-3.0)
 | Tool | Description | Status |
 |------|-------------|--------|
 | Text Encoder | Encode/decode text (Base64, URL, HTML entities, etc.) | Ready |
+| Password Generator | Secure, unique, and memorable password generation | Ready |
 
 ## Quick Start
 
