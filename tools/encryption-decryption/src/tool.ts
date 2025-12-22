@@ -26,26 +26,39 @@ export const DEFAULT_IV_LENGTH = 12;    // 96 bits (GCM/ChaCha20 standard)
 
 // Cache for ChaCha20 support detection
 let _chacha20Supported: boolean | null = null;
+let _chacha20SupportPromise: Promise<boolean> | null = null;
 
 /**
  * Check if ChaCha20-Poly1305 is supported in this browser
  */
 export async function isChaCha20Supported(): Promise<boolean> {
-    if (_chacha20Supported !== null) return _chacha20Supported;
-
-    try {
-        // Try to generate a ChaCha20-Poly1305 key
-        await crypto.subtle.generateKey(
-            { name: 'ChaCha20-Poly1305', length: 256 } as Algorithm,
-            false,
-            ['encrypt', 'decrypt']
-        );
-        _chacha20Supported = true;
-    } catch {
-        _chacha20Supported = false;
+    // Fast path: support has already been determined
+    if (_chacha20Supported !== null) {
+        return _chacha20Supported;
     }
 
-    return _chacha20Supported;
+    // If a detection is already in progress, reuse its promise
+    if (_chacha20SupportPromise) {
+        return _chacha20SupportPromise;
+    }
+
+    // Start a new detection and cache the in-flight promise
+    _chacha20SupportPromise = (async () => {
+        try {
+            // Try to generate a ChaCha20-Poly1305 key
+            await crypto.subtle.generateKey(
+                { name: 'ChaCha20-Poly1305', length: 256 } as Algorithm,
+                false,
+                ['encrypt', 'decrypt']
+            );
+            _chacha20Supported = true;
+        } catch {
+            _chacha20Supported = false;
+        }
+        return _chacha20Supported;
+    })();
+
+    return _chacha20SupportPromise;
 }
 
 /**
@@ -335,8 +348,14 @@ export class EncryptorTool {
             );
 
             return new Uint8Array(decryptedBuffer);
-        } catch {
-            throw new Error('Decryption failed: incorrect password or corrupted data');
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                throw new Error(
+                    `Decryption failed due to incorrect password or corrupted data. Details: ${error.message}`,
+                    { cause: error }
+                );
+            }
+            throw new Error('Decryption failed due to incorrect password or corrupted data');
         }
     }
 

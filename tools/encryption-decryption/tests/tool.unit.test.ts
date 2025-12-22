@@ -178,7 +178,7 @@ describe('EncryptorTool', () => {
 
                 it('handles files with special characters in filename', async () => {
                     const mockFileData = createMockBinaryFile(512);
-                    const originalFilename = 'my file (2024) - copy [final].pdf';
+                    const originalFilename = 'my file (2025) - copy [final].pdf';
 
                     const encrypted = await EncryptorTool.encrypt(mockFileData, testPassword, algorithm, {
                         filename: originalFilename

@@ -36,10 +36,13 @@ const secureRandomString = (length: number): string => {
   const charsetLen = charset.length;
   let result = '';
 
-  const globalAny = globalThis as any;
+  const globalWithCrypto = globalThis as typeof globalThis & {
+    crypto?: Crypto;
+    msCrypto?: Crypto;
+  };
   const cryptoObj: Crypto | undefined =
     (typeof globalThis !== 'undefined' &&
-      (globalAny.crypto || globalAny.msCrypto)) as Crypto | undefined;
+      (globalWithCrypto.crypto || globalWithCrypto.msCrypto)) as Crypto | undefined;
 
   if (cryptoObj && typeof cryptoObj.getRandomValues === 'function') {
     const randomValues = new Uint32Array(length);
@@ -654,7 +657,7 @@ export function renderEncryptorPage(): HTMLElement {
         <div class="advanced-row">
           <div>
             <label class="advanced-label" for="iterations">PBKDF2 Iterations</label>
-            <input type="number" class="advanced-input" id="iterations" value="${DEFAULT_PBKDF2_ITERATIONS}" min="10000" max="1000000">
+            <input type="number" class="advanced-input" id="iterations" value="${DEFAULT_PBKDF2_ITERATIONS}" min="100000" max="1000000">
           </div>
           <div>
             <label class="advanced-label" for="salt-length">Salt Length (bytes)</label>
@@ -779,10 +782,13 @@ function setupEventListeners(container: HTMLElement): void {
 
     // Best-effort scrubbing of in-memory file data.
     if (fileData) {
-      const globalAny = globalThis as any;
+      const globalWithCrypto = globalThis as typeof globalThis & {
+        crypto?: Crypto;
+        msCrypto?: Crypto;
+      };
       const cryptoObj: Crypto | undefined =
         (typeof globalThis !== 'undefined' &&
-          (globalAny.crypto || globalAny.msCrypto)) as Crypto | undefined;
+          (globalWithCrypto.crypto || globalWithCrypto.msCrypto)) as Crypto | undefined;
       if (cryptoObj && typeof cryptoObj.getRandomValues === 'function') {
         cryptoObj.getRandomValues(fileData);
       }
@@ -1040,7 +1046,7 @@ function setupEventListeners(container: HTMLElement): void {
           outputText.value = '[Binary file - use Download to save]';
           copyOutputBtn.value = '';
           downloadBtn.content = decrypted;
-          const ext = originalFilename?.split('.').pop()?.toLowerCase() || '';
+
           let mimeType = originalMimeType;
           if (!mimeType) {
             const ext = originalFilename?.split('.').pop()?.toLowerCase() || '';
@@ -1059,6 +1065,9 @@ function setupEventListeners(container: HTMLElement): void {
     } finally {
       actionBtn.disabled = false;
       actionBtnText.textContent = isEncryptMode ? 'Encrypt' : 'Decrypt';
+      // Enhance security by scrubbing password inputs after operation
+      scrubValueElement(password);
+      scrubValueElement(confirmPassword);
     }
   });
 

@@ -1,4 +1,4 @@
-/// <reference path="../types.d.ts" />
+import '../types.d.ts';
 /**
  * DownloadButton Web Component
  * 
@@ -82,7 +82,7 @@ export class LuDownloadButton extends HTMLElement {
 
     const blobContent = typeof content === 'string'
       ? [content]
-      : [content as any];
+      : [content as unknown as BlobPart];
     const blob = new Blob(blobContent, { type: mimeType });
 
     const ext = filename.split('.').pop() || 'txt';
@@ -91,7 +91,7 @@ export class LuDownloadButton extends HTMLElement {
 
     if ('showSaveFilePicker' in window) {
       try {
-        const handle = await window.showSaveFilePicker({
+        const handle = await (window as any).showSaveFilePicker({
           suggestedName: filename,
           types: [{
             description: ext.toUpperCase() + ' file',
