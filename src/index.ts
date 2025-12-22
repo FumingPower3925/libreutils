@@ -6,6 +6,7 @@ import { renderAboutPage } from './pages/about';
 import { renderNotFoundPage } from './pages/not-found';
 import { renderTextEncoderPage, secureCleanup as cleanupTextEncoder } from '../tools/text-encoder/src/page';
 import { renderPasswordGeneratorPage, secureCleanup as cleanupPasswordGenerator } from '../tools/password-generator/src/page';
+import { renderEncryptorPage, secureCleanup as cleanupEncryptor } from '../tools/encryption-decryption/src/page';
 
 function initTheme(): void {
     const stored = localStorage.getItem('lu-theme');
@@ -123,6 +124,12 @@ const routes: Route[] = [
         title: 'Password Generator',
         render: renderPasswordGeneratorPage,
         onLeave: cleanupPasswordGenerator
+    },
+    {
+        path: '/tools/encryption-decryption',
+        title: 'Encryptor / Decryptor',
+        render: renderEncryptorPage,
+        onLeave: cleanupEncryptor
     },
 ];
 

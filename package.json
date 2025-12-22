@@ -1,6 +1,6 @@
 {
   "name": "libreutils",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "A privacy-first collection of useful web tools that run entirely in your browser",
   "license": "AGPL-3.0-or-later",
