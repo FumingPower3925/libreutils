@@ -1,4 +1,4 @@
-const CACHE_VERSION = '0.1.3';
+const CACHE_VERSION = '0.2.0';
 const CACHE_NAME = `libreutils-v${CACHE_VERSION}`;
 const STATIC_ASSETS = [
     '/',
