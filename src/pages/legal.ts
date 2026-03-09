@@ -432,12 +432,6 @@ export function renderLegalPage(): HTMLElement {
       </thead>
       <tbody>
         <tr>
-          <td><a href="https://github.com/mattiasw/exifreader" class="dep-name" target="_blank" rel="noopener">exifreader</a></td>
-          <td><a href="https://github.com/mattiasw/exifreader/blob/master/LICENSE" class="dep-badge" target="_blank" rel="noopener">MIT</a></td>
-          <td class="dep-desc">EXIF metadata parsing in Metadata Scrubber</td>
-          <td><a href="https://github.com/mattiasw/exifreader" class="dep-link" target="_blank" rel="noopener">GitHub</a></td>
-        </tr>
-        <tr>
           <td>
             <a href="https://github.com/paulmillr/noble-hashes" class="dep-name" target="_blank" rel="noopener">@noble/hashes</a>
             <div class="dep-note">Vendored at tools/checksum-generator/src/lib/noble/</div>
@@ -465,12 +459,33 @@ export function renderLegalPage(): HTMLElement {
           <td><a href="https://github.com/101arrowz/fflate" class="dep-link" target="_blank" rel="noopener">GitHub</a></td>
         </tr>
         <tr>
+          <td><a href="https://gildas-lormeau.github.io/zip.js/" class="dep-name" target="_blank" rel="noopener">@zip.js/zip.js</a></td>
+          <td><a href="https://github.com/gildas-lormeau/zip.js/blob/master/LICENSE" class="dep-badge" target="_blank" rel="noopener">BSD-3-Clause</a></td>
+          <td class="dep-desc">Password-protected ZIP creation &amp; extraction in Archive Manager</td>
+          <td><a href="https://github.com/gildas-lormeau/zip.js" class="dep-link" target="_blank" rel="noopener">GitHub</a></td>
+        </tr>
+        <tr>
+          <td>
+            <a href="https://github.com/use-strict/7z-wasm" class="dep-name" target="_blank" rel="noopener">7z-wasm</a>
+            <div class="dep-note">WASM binary (~1.6 MB) loaded on demand</div>
+          </td>
+          <td><a href="https://github.com/use-strict/7z-wasm/blob/main/License.txt" class="dep-badge" target="_blank" rel="noopener">LGPL-2.1</a></td>
+          <td class="dep-desc">Password-protected 7z creation &amp; extraction in Archive Manager</td>
+          <td><a href="https://github.com/use-strict/7z-wasm" class="dep-link" target="_blank" rel="noopener">GitHub</a></td>
+        </tr>
+        <tr>
           <td>
             <a href="https://github.com/ffmpegwasm/ffmpeg.wasm" class="dep-name" target="_blank" rel="noopener">@ffmpeg/ffmpeg</a>
             <div class="dep-note">WASM core (~25 MB) loaded on demand from CDN</div>
           </td>
           <td><a href="https://github.com/ffmpegwasm/ffmpeg.wasm/blob/main/LICENSE" class="dep-badge" target="_blank" rel="noopener">MIT</a></td>
           <td class="dep-desc">Video &amp; audio metadata stripping in Metadata Scrubber</td>
+          <td><a href="https://github.com/ffmpegwasm/ffmpeg.wasm" class="dep-link" target="_blank" rel="noopener">GitHub</a></td>
+        </tr>
+        <tr>
+          <td><a href="https://github.com/ffmpegwasm/ffmpeg.wasm" class="dep-name" target="_blank" rel="noopener">@ffmpeg/util</a></td>
+          <td><a href="https://github.com/ffmpegwasm/ffmpeg.wasm/blob/main/LICENSE" class="dep-badge" target="_blank" rel="noopener">MIT</a></td>
+          <td class="dep-desc">FFmpeg.wasm utility functions in Metadata Scrubber</td>
           <td><a href="https://github.com/ffmpegwasm/ffmpeg.wasm" class="dep-link" target="_blank" rel="noopener">GitHub</a></td>
         </tr>
       </tbody>
