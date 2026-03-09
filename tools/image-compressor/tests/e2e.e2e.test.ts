@@ -49,18 +49,19 @@ describe('ImageCompressor E2E / Integration', () => {
     });
 
     describe('format detection', () => {
-        it('should return all three supported formats', () => {
+        it('should return all supported formats including custom encoders', () => {
             const formats = ImageCompressor.getSupportedFormats();
             expect(formats).toContain('image/jpeg');
             expect(formats).toContain('image/webp');
             expect(formats).toContain('image/png');
+            expect(formats).toContain('image/gif');
+            expect(formats).toContain('image/bmp');
+            expect(formats).toContain('image/tiff');
         });
 
-        it('should not include unsupported formats', () => {
+        it('should return at least 6 formats', () => {
             const formats = ImageCompressor.getSupportedFormats();
-            expect(formats).not.toContain('image/gif');
-            expect(formats).not.toContain('image/bmp');
-            expect(formats).not.toContain('image/tiff');
+            expect(formats.length).toBeGreaterThanOrEqual(6);
         });
     });
 

@@ -35,7 +35,7 @@ describe('Image Compressor Page', () => {
     it('should have a file input accepting image formats', () => {
         const fileInput = container.querySelector('#file-input') as HTMLInputElement;
         expect(fileInput).toBeTruthy();
-        expect(fileInput.accept).toBe('.jpg,.jpeg,.png,.webp');
+        expect(fileInput.accept).toBe('.jpg,.jpeg,.png,.webp,.gif,.bmp,.tiff,.tif,.avif');
     });
 
     it('should have controls panel hidden initially', () => {
@@ -50,14 +50,19 @@ describe('Image Compressor Page', () => {
         expect(slider.value).toBe('80');
     });
 
-    it('should have format select with JPEG, WebP, PNG options', () => {
+    it('should have format select with at least 6 format options', () => {
         const select = container.querySelector('#format-select') as HTMLSelectElement;
         expect(select).toBeTruthy();
         const options = select.querySelectorAll('option');
-        expect(options.length).toBe(3);
-        expect(options[0].value).toBe('image/jpeg');
-        expect(options[1].value).toBe('image/webp');
-        expect(options[2].value).toBe('image/png');
+        expect(options.length).toBeGreaterThanOrEqual(6);
+        // Check key formats are present
+        const values = Array.from(options).map(o => o.value);
+        expect(values).toContain('image/jpeg');
+        expect(values).toContain('image/webp');
+        expect(values).toContain('image/png');
+        expect(values).toContain('image/gif');
+        expect(values).toContain('image/bmp');
+        expect(values).toContain('image/tiff');
     });
 
     it('should have max width and height inputs', () => {
@@ -92,9 +97,100 @@ describe('Image Compressor Page', () => {
         expect(btn.textContent).toContain('Download');
     });
 
+    it('should have crop toggle button', () => {
+        const cropToggle = container.querySelector('#crop-toggle') as HTMLButtonElement;
+        expect(cropToggle).toBeTruthy();
+        expect(cropToggle.textContent).toContain('Crop');
+    });
+
+    it('should have lossless toggle (hidden by default for JPEG)', () => {
+        const losslessGroup = container.querySelector('#lossless-group') as HTMLElement;
+        expect(losslessGroup).toBeTruthy();
+        // JPEG is the default format; lossless should be hidden
+        expect(losslessGroup.style.display).toBe('none');
+    });
+
+    it('should show lossless toggle when WebP is selected', () => {
+        const formatSelect = container.querySelector('#format-select') as HTMLSelectElement;
+        const losslessGroup = container.querySelector('#lossless-group') as HTMLElement;
+
+        formatSelect.value = 'image/webp';
+        formatSelect.dispatchEvent(new Event('change'));
+
+        expect(losslessGroup.style.display).not.toBe('none');
+    });
+
+    it('should disable quality slider when lossless is checked for WebP', () => {
+        const formatSelect = container.querySelector('#format-select') as HTMLSelectElement;
+        const qualitySlider = container.querySelector('#quality-slider') as HTMLInputElement;
+        const losslessToggle = container.querySelector('#lossless-toggle') as HTMLInputElement;
+
+        formatSelect.value = 'image/webp';
+        formatSelect.dispatchEvent(new Event('change'));
+
+        losslessToggle.checked = true;
+        losslessToggle.dispatchEvent(new Event('change'));
+
+        expect(qualitySlider.disabled).toBe(true);
+
+        // Uncheck to restore
+        losslessToggle.checked = false;
+        losslessToggle.dispatchEvent(new Event('change'));
+        expect(qualitySlider.disabled).toBe(false);
+    });
+
+    it('should enable quality slider for GIF with palette note', () => {
+        const formatSelect = container.querySelector('#format-select') as HTMLSelectElement;
+        const qualitySlider = container.querySelector('#quality-slider') as HTMLInputElement;
+        const qualityNote = container.querySelector('#quality-note') as HTMLElement;
+
+        formatSelect.value = 'image/gif';
+        formatSelect.dispatchEvent(new Event('change'));
+
+        expect(qualitySlider.disabled).toBe(false);
+        expect(qualityNote.textContent).toContain('palette size');
+    });
+
+    it('should disable quality slider for TIFF with LZW note', () => {
+        const formatSelect = container.querySelector('#format-select') as HTMLSelectElement;
+        const qualitySlider = container.querySelector('#quality-slider') as HTMLInputElement;
+        const qualityNote = container.querySelector('#quality-note') as HTMLElement;
+
+        formatSelect.value = 'image/tiff';
+        formatSelect.dispatchEvent(new Event('change'));
+
+        expect(qualitySlider.disabled).toBe(true);
+        expect(qualityNote.textContent).toContain('LZW');
+    });
+
+    it('should disable quality slider for BMP', () => {
+        const formatSelect = container.querySelector('#format-select') as HTMLSelectElement;
+        const qualitySlider = container.querySelector('#quality-slider') as HTMLInputElement;
+
+        formatSelect.value = 'image/bmp';
+        formatSelect.dispatchEvent(new Event('change'));
+
+        expect(qualitySlider.disabled).toBe(true);
+    });
+
+    it('should disable quality slider for PNG', () => {
+        const formatSelect = container.querySelector('#format-select') as HTMLSelectElement;
+        const qualitySlider = container.querySelector('#quality-slider') as HTMLInputElement;
+
+        formatSelect.value = 'image/png';
+        formatSelect.dispatchEvent(new Event('change'));
+
+        expect(qualitySlider.disabled).toBe(true);
+    });
+
     it('should update quality display when slider changes', () => {
+        const formatSelect = container.querySelector('#format-select') as HTMLSelectElement;
         const slider = container.querySelector('#quality-slider') as HTMLInputElement;
         const valueDisplay = container.querySelector('#quality-value') as HTMLElement;
+
+        // Switch to JPEG first so the slider is enabled
+        formatSelect.value = 'image/jpeg';
+        formatSelect.dispatchEvent(new Event('change'));
 
         slider.value = '50';
         slider.dispatchEvent(new Event('input'));

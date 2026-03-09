@@ -1,5 +1,6 @@
 import { describe, it, expect } from "bun:test";
-import { ImageCompressor } from "../src/tool";
+import { ImageCompressor, type CompressionOptions } from "../src/tool";
+import { encodeBMP, encodeTIFF, encodeGIF } from "../src/encoders";
 
 describe('ImageCompressor', () => {
     describe('calculateDimensions', () => {
@@ -26,16 +27,13 @@ describe('ImageCompressor', () => {
         });
 
         it('should scale down to fit within both maxWidth and maxHeight', () => {
-            // Landscape image constrained by width
             const result = ImageCompressor.calculateDimensions(3840, 2160, 1920, 1080);
             expect(result.width).toBe(1920);
             expect(result.height).toBe(1080);
         });
 
         it('should constrain by height when height is the limiting factor', () => {
-            // Tall image: 1000x2000, max 800x800
             const result = ImageCompressor.calculateDimensions(1000, 2000, 800, 800);
-            // Width first: 800x1600, then height: 800 -> width = 400
             expect(result.width).toBe(400);
             expect(result.height).toBe(800);
         });
@@ -92,13 +90,47 @@ describe('ImageCompressor', () => {
     });
 
     describe('getSupportedFormats', () => {
-        it('should return JPEG, WebP, and PNG', () => {
+        it('should return at least JPEG, WebP, PNG, GIF, BMP, TIFF', () => {
             const formats = ImageCompressor.getSupportedFormats();
-            expect(formats).toEqual(['image/jpeg', 'image/webp', 'image/png']);
+            expect(formats).toContain('image/jpeg');
+            expect(formats).toContain('image/webp');
+            expect(formats).toContain('image/png');
+            expect(formats).toContain('image/gif');
+            expect(formats).toContain('image/bmp');
+            expect(formats).toContain('image/tiff');
         });
 
-        it('should return exactly 3 formats', () => {
-            expect(ImageCompressor.getSupportedFormats().length).toBe(3);
+        it('should return at least 6 formats', () => {
+            expect(ImageCompressor.getSupportedFormats().length).toBeGreaterThanOrEqual(6);
+        });
+    });
+
+    describe('CompressionOptions interface', () => {
+        it('should accept lossless option', () => {
+            const options: CompressionOptions = {
+                quality: 0.8,
+                outputFormat: 'image/webp',
+                lossless: true,
+            };
+            expect(options.lossless).toBe(true);
+        });
+
+        it('should accept lossless as undefined', () => {
+            const options: CompressionOptions = {
+                quality: 0.8,
+                outputFormat: 'image/jpeg',
+            };
+            expect(options.lossless).toBeUndefined();
+        });
+
+        it('should accept crop option', () => {
+            const options: CompressionOptions = {
+                quality: 0.8,
+                outputFormat: 'image/jpeg',
+                crop: { x: 10, y: 20, width: 100, height: 200 },
+            };
+            expect(options.crop).toBeDefined();
+            expect(options.crop!.x).toBe(10);
         });
     });
 
@@ -110,7 +142,6 @@ describe('ImageCompressor', () => {
                     quality: 0.8,
                     outputFormat: 'image/jpeg',
                 });
-                // Should not reach here
                 expect(true).toBe(false);
             } catch (err) {
                 expect(err).toBeInstanceOf(Error);
@@ -130,5 +161,19 @@ describe('ImageCompressor', () => {
                 expect((err as Error).message).toContain('Canvas API');
             }
         });
+    });
+});
+
+describe('Custom Encoders (non-browser - import validation)', () => {
+    it('should export encodeBMP function', () => {
+        expect(typeof encodeBMP).toBe('function');
+    });
+
+    it('should export encodeTIFF function', () => {
+        expect(typeof encodeTIFF).toBe('function');
+    });
+
+    it('should export encodeGIF function', () => {
+        expect(typeof encodeGIF).toBe('function');
     });
 });

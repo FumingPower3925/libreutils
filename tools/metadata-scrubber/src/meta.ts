@@ -3,10 +3,10 @@ import type { ToolMeta } from '@libreutils/shared';
 export const meta: ToolMeta & { libraries: { name: string; url: string; license: string; description: string }[] } = {
     id: 'metadata-scrubber',
     name: 'Metadata Scrubber',
-    description: 'Remove hidden metadata from images, PDFs, and documents to protect your privacy before sharing.',
+    description: 'Remove hidden metadata from images (JPEG, PNG, WebP, GIF, TIFF, SVG), PDFs, and audio files (MP3, FLAC, WAV) to protect your privacy before sharing.',
     category: 'file',
     icon: 'shield',
-    keywords: ['metadata', 'exif', 'scrub', 'strip', 'privacy', 'image', 'pdf', 'gps', 'location', 'iptc', 'xmp'],
+    keywords: ['metadata', 'exif', 'scrub', 'strip', 'privacy', 'image', 'pdf', 'gps', 'location', 'iptc', 'xmp', 'webp', 'gif', 'tiff', 'svg', 'mp3', 'flac', 'wav', 'audio', 'id3'],
     libraries: [
         {
             name: 'exifreader',

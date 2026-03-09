@@ -39,18 +39,18 @@ const tools: ToolMeta[] = [
   {
     id: 'metadata-scrubber',
     name: 'Metadata Scrubber',
-    description: 'Remove sensitive metadata from files (PDFs, images, videos, audio) before sharing. Supports EXIF, GPS, XMP, IPTC removal.',
+    description: 'Remove sensitive metadata from files before sharing. Supports images, PDFs, audio, and video formats including MP4, MKV, and WebM.',
     category: 'privacy',
     icon: 'clean',
-    keywords: ['metadata', 'privacy', 'exif', 'gps', 'pdf', 'image', 'video', 'audio', 'scrub', 'remove'],
+    keywords: ['metadata', 'privacy', 'exif', 'gps', 'pdf', 'image', 'video', 'audio', 'scrub', 'remove', 'mp4', 'mkv', 'webm'],
   },
   {
     id: 'archive-manager',
     name: 'Archive Manager',
-    description: 'View and extract ZIP, TAR, and GZ archive files entirely in your browser.',
-    category: 'file',
+    description: 'Create and extract ZIP, TAR, GZ, RAR, 7Z, BZ2, and XZ archive files entirely in your browser.',
+    category: 'compression',
     icon: 'archive',
-    keywords: ['archive', 'zip', 'tar', 'gz', 'extract', 'compress'],
+    keywords: ['archive', 'zip', 'tar', 'gz', 'rar', '7z', 'bz2', 'xz', 'extract', 'compress'],
   },
   {
     id: 'image-compressor',
@@ -101,6 +101,20 @@ export function renderHomePage(): HTMLElement {
         font-weight: 500;
         border-radius: var(--lu-radius-full, 9999px);
         margin-bottom: var(--lu-space-6, 1.5rem);
+        user-select: none;
+      }
+      :root.lu-theme-dark .hero-badge {
+        background: rgba(46, 125, 50, 0.2);
+        color: #6ee775;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not(.lu-theme-light) .hero-badge {
+          background: rgba(46, 125, 50, 0.2);
+          color: #6ee775;
+        }
+        :root:not(.lu-theme-light) .hero {
+          background: linear-gradient(135deg, #1f1432 0%, #121212 100%);
+        }
       }
       .hero-badge svg {
         width: 16px;
@@ -139,6 +153,7 @@ export function renderHomePage(): HTMLElement {
         gap: var(--lu-space-2, 0.5rem);
         font-size: var(--lu-text-sm, 0.875rem);
         color: var(--lu-text-secondary, #6b7280);
+        user-select: none;
       }
       .feature svg {
         width: 18px;

@@ -5,6 +5,8 @@
     "main": "src/index.ts",
     "dependencies": {
         "@libreutils/shared": "file:../../shared",
+        "@ffmpeg/ffmpeg": "^0.12.15",
+        "@ffmpeg/util": "^0.12.2",
         "pdf-lib": "1.17.1"
     }
 }
