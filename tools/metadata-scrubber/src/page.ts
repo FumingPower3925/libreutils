@@ -54,6 +54,7 @@ export function renderMetadataScrubberPage(): HTMLElement {
       .status-message.visible { display: block; }
       .status-message.success { background: var(--lu-success-light, #ecfdf5); color: var(--lu-success, #10b981); border: 1px solid var(--lu-success, #10b981); }
       .status-message.error { background: #fef2f2; color: var(--lu-error, #ef4444); border: 1px solid var(--lu-error, #ef4444); }
+      .status-message.info { background: var(--lu-primary-50, #f5f3ff); color: var(--lu-primary-600, #57388c); border: 1px solid var(--lu-primary-300, #c3b3db); }
 
       .processing-overlay { display: none; text-align: center; padding: 1rem; }
       .processing-overlay.visible { display: block; }
@@ -63,8 +64,6 @@ export function renderMetadataScrubberPage(): HTMLElement {
       <h1 class="title">${ICONS.shield} Metadata Scrubber</h1>
       <p class="subtitle">Remove hidden metadata from files to protect your privacy</p>
       <div style="font-size: 0.8rem; color: var(--lu-text-muted); margin-top: 0.5rem;">
-        Powered by <a href="https://github.com/Hopding/pdf-lib" target="_blank" style="color:inherit; text-decoration:underline;">pdf-lib</a>.
-        <br>
         100% Local Execution. Your files never leave your browser.
       </div>
     </header>
@@ -73,8 +72,8 @@ export function renderMetadataScrubberPage(): HTMLElement {
       <div class="drop-zone" id="scrub-drop-zone">
         <div style="margin-bottom:0.5rem; color: var(--lu-text-muted);">${ICONS.upload}</div>
         <div id="scrub-file-label">Drop a file here or click to browse</div>
-        <div style="font-size: 0.8rem; color: var(--lu-text-muted); margin-top: 0.5rem;">Supports: JPEG, PNG, PDF</div>
-        <input type="file" id="scrub-file-input" hidden accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf">
+        <div style="font-size: 0.8rem; color: var(--lu-text-muted); margin-top: 0.5rem;">Supports: JPEG, PNG, WebP, GIF, TIFF, SVG, PDF, MP3, FLAC, WAV, MP4, MKV, AVI, MOV, WebM, OGG, M4A</div>
+        <input type="file" id="scrub-file-input" hidden accept="image/jpeg,image/png,image/webp,image/gif,image/tiff,image/svg+xml,application/pdf,audio/mpeg,audio/flac,audio/wav,audio/ogg,audio/mp4,audio/aac,video/mp4,video/x-matroska,video/avi,video/quicktime,video/webm,.jpg,.jpeg,.png,.webp,.gif,.tiff,.tif,.svg,.pdf,.mp3,.flac,.wav,.mp4,.mkv,.avi,.mov,.webm,.ogg,.m4a,.aac">
       </div>
 
       <div class="options-group" id="options-group" style="display:none;">
@@ -189,16 +188,16 @@ function setupEventListeners(container: HTMLElement) {
         dropZone.classList.add('has-file');
 
         const fileType = MetadataScrubber.getFileType(file);
+        const ext = MetadataScrubber.getFileExtension(file.name);
 
-        if (fileType === 'audio' || fileType === 'video') {
-            showStatus('Audio and video metadata scrubbing is coming in a future update. Currently supported: JPEG, PNG, and PDF files.', 'error');
-            actionButtons.style.display = 'none';
-            optionsGroup.style.display = 'none';
-            return;
+        // Video files and complex audio containers require FFmpeg WASM (lazy-loaded)
+        const ffmpegExts = ['mp4', 'mkv', 'avi', 'mov', 'webm', 'ogg', 'm4a', 'aac'];
+        if (fileType === 'video' || (fileType === 'audio' && ffmpegExts.includes(ext))) {
+            showStatus('This format requires FFmpeg WASM (~25 MB download on first use). Processing may take a moment.', 'info');
         }
 
-        // Show options for images
-        if (fileType === 'image') {
+        // Show options for images and audio
+        if (fileType === 'image' || fileType === 'audio') {
             optionsGroup.style.display = 'block';
         } else {
             optionsGroup.style.display = 'none';
@@ -233,7 +232,7 @@ function setupEventListeners(container: HTMLElement) {
         metadataDisplay.classList.add('visible');
     }
 
-    function showStatus(message: string, type: 'success' | 'error') {
+    function showStatus(message: string, type: 'success' | 'error' | 'info') {
         statusMessage.textContent = message;
         statusMessage.className = `status-message visible ${type}`;
     }
