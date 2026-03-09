@@ -19,16 +19,18 @@
     "build:tools": "bun run --filter '@libreutils/tool-*' build",
     "build:web": "bun build ./src/index.ts --outdir ./dist --target browser --minify && cp ./src/index.html ./dist/ && cp -r ./public/* ./dist/ && cat ./shared/src/styles/variables.css ./shared/src/styles/base.css ./shared/src/styles/components.css > ./dist/styles.css",
     "clean": "rm -rf node_modules shared/node_modules tools/*/node_modules dist shared/dist tools/*/dist",
-    "test": "bun test",
+    "test": "bun test .test.ts",
     "test:unit": "bun test --filter '*.test.ts'",
     "test:e2e": "bun test --filter '*.e2e.test.ts'",
     "lint": "bun run typecheck",
     "typecheck": "tsc --noEmit",
     "version:sync": "bun run ./scripts/sync-version.ts",
-    "hooks:install": "bun run ./scripts/install-hooks.ts"
+    "hooks:install": "bun run ./scripts/install-hooks.ts",
+    "test:e2e:playwright": "bunx playwright test"
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "20.0.11",
+    "@playwright/test": "1.58.2",
     "@types/bun": "^1.3.5",
     "happy-dom": "20.7.0",
     "typescript": "5.9.3"
