@@ -1,0 +1,19 @@
+{
+    "name": "@libreutils/tool-image-compressor",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "description": "Compress and resize images with side-by-side preview",
+    "main": "./src/index.ts",
+    "exports": {
+        ".": "./src/index.ts",
+        "./meta": "./src/meta.ts"
+    },
+    "scripts": {
+        "dev": "bun run ./src/dev.ts",
+        "build": "bun build ./src/index.ts --outdir ./dist --target browser --minify"
+    },
+    "dependencies": {
+        "@libreutils/shared": "file:../../shared"
+    }
+}
