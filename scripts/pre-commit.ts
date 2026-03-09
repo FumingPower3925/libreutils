@@ -24,7 +24,7 @@ if (versionSync.exitCode !== 0) {
 await $`git add public/manifest.json public/sw.js`.quiet().nothrow();
 
 console.log('  > Running tests...');
-const tests = await $`bun test`.quiet().nothrow();
+const tests = await $`bun run test`.quiet().nothrow();
 if (tests.exitCode !== 0) {
     console.log('[X] Tests failed. Fix before committing.\n');
     console.log(tests.stdout.toString());
