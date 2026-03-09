@@ -74,6 +74,17 @@ const server = Bun.serve({
             });
         }
 
+        // Serve vendor files from node_modules (libarchive.js worker + WASM)
+        if (pathname.startsWith('/vendor/libarchive/')) {
+            const vendorFile = Bun.file(`./tools/archive-manager/node_modules/libarchive.js/dist/${pathname.replace('/vendor/libarchive/', '')}`);
+            if (await vendorFile.exists()) {
+                const headers: Record<string, string> = { 'Cache-Control': 'no-cache' };
+                if (pathname.endsWith('.wasm')) headers['Content-Type'] = 'application/wasm';
+                else if (pathname.endsWith('.js')) headers['Content-Type'] = 'application/javascript';
+                return new Response(vendorFile, { headers });
+            }
+        }
+
         const publicPath = `./public${pathname}`;
         const publicFile = Bun.file(publicPath);
 
