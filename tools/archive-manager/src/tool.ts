@@ -14,6 +14,19 @@ export interface ExtractedFile {
 
 export type ArchiveFormat = 'zip' | 'tar' | 'tar.gz' | 'gz' | 'unknown';
 
+export type CreateArchiveFormat = 'zip' | 'tar' | 'tar.gz';
+
+export interface CreateArchiveOptions {
+    format: CreateArchiveFormat;
+    compressionLevel?: number; // 0-9 for ZIP
+    password?: string; // ZIP only (not yet supported)
+}
+
+export interface InputFile {
+    name: string; // Can include path like "folder/file.txt"
+    data: Uint8Array;
+}
+
 // ── ZIP constants ──────────────────────────────────────────────────────
 const ZIP_LOCAL_HEADER_SIG = 0x04034b50;
 const ZIP_CENTRAL_DIR_SIG = 0x02014b50;
@@ -474,5 +487,127 @@ export class ArchiveManager {
             results.push({ name: entry.name, data: extracted, size: extracted.length });
         }
         return results;
+    }
+
+    // ── Archive creation ──────────────────────────────────────────────
+
+    /**
+     * Create an archive from a list of input files.
+     */
+    static async createArchive(files: InputFile[], options: CreateArchiveOptions): Promise<Blob> {
+        switch (options.format) {
+            case 'zip':
+                return this.createZip(files, options);
+            case 'tar':
+                return this.createTar(files);
+            case 'tar.gz':
+                return this.createTarGz(files);
+            default:
+                throw new Error(`Unsupported creation format: ${(options as CreateArchiveOptions).format}`);
+        }
+    }
+
+    /**
+     * Create a ZIP archive using fflate.
+     */
+    private static async createZip(files: InputFile[], options: CreateArchiveOptions): Promise<Blob> {
+        const fflate = await import('fflate');
+        const level = (options.compressionLevel ?? 6) as 0|1|2|3|4|5|6|7|8|9;
+        const zipData: Record<string, [Uint8Array, { level: 0|1|2|3|4|5|6|7|8|9 }]> = {};
+        for (const file of files) {
+            zipData[file.name] = [file.data, { level }];
+        }
+        const zipped = fflate.zipSync(zipData);
+        return new Blob([zipped as BlobPart], { type: 'application/zip' });
+    }
+
+    /**
+     * Create a TAR archive manually.
+     */
+    private static createTar(files: InputFile[]): Blob {
+        const parts: Uint8Array[] = [];
+        const enc = new TextEncoder();
+
+        for (const file of files) {
+            const header = new Uint8Array(512);
+
+            // Name (0-99)
+            const nameBytes = enc.encode(file.name);
+            header.set(nameBytes.subarray(0, Math.min(100, nameBytes.length)), 0);
+
+            // File mode (100-107): "0000644\0"
+            header.set(enc.encode('0000644\0'), 100);
+
+            // Owner ID (108-115): "0000000\0"
+            header.set(enc.encode('0000000\0'), 108);
+
+            // Group ID (116-123): "0000000\0"
+            header.set(enc.encode('0000000\0'), 116);
+
+            // File size (124-135): octal
+            header.set(enc.encode(file.data.length.toString(8).padStart(11, '0') + '\0'), 124);
+
+            // Mtime (136-147)
+            const mtime = Math.floor(Date.now() / 1000);
+            header.set(enc.encode(mtime.toString(8).padStart(11, '0') + '\0'), 136);
+
+            // Type flag: '0' regular file
+            header[156] = 48;
+
+            // UStar magic + version
+            header.set(enc.encode('ustar\0'), 257);
+            header[263] = 48; header[264] = 48;
+
+            // Checksum (148-155): initialize with spaces, compute, write
+            for (let i = 148; i < 156; i++) header[i] = 32;
+            let checksum = 0;
+            for (let i = 0; i < 512; i++) checksum += header[i];
+            header.set(enc.encode(checksum.toString(8).padStart(6, '0') + '\0 '), 148);
+
+            parts.push(header);
+            parts.push(file.data);
+
+            // Pad data to 512-byte boundary
+            const padding = (512 - (file.data.length % 512)) % 512;
+            if (padding > 0) parts.push(new Uint8Array(padding));
+        }
+
+        // Two 512-byte blocks of zeros as end marker
+        parts.push(new Uint8Array(1024));
+
+        return new Blob(parts as BlobPart[], { type: 'application/x-tar' });
+    }
+
+    /**
+     * Create a TAR.GZ archive (TAR + gzip compression via fflate).
+     */
+    private static async createTarGz(files: InputFile[]): Promise<Blob> {
+        const tarBlob = this.createTar(files);
+        const tarData = new Uint8Array(await tarBlob.arrayBuffer());
+
+        const fflate = await import('fflate');
+        const gzipped = fflate.gzipSync(tarData);
+
+        return new Blob([gzipped as BlobPart], { type: 'application/gzip' });
+    }
+
+    // ── Encryption detection ──────────────────────────────────────────
+
+    /**
+     * Detect if a ZIP archive is encrypted by checking the general purpose bit flag.
+     */
+    static isZipEncrypted(data: Uint8Array): boolean {
+        let offset = 0;
+        while (offset + 30 <= data.length) {
+            const sig = readUint32LE(data, offset);
+            if (sig !== ZIP_LOCAL_HEADER_SIG) break;
+            const flags = readUint16LE(data, offset + 6);
+            if (flags & 0x01) return true; // Encryption flag
+            const compSize = readUint32LE(data, offset + 18);
+            const nameLen = readUint16LE(data, offset + 26);
+            const extraLen = readUint16LE(data, offset + 28);
+            offset += 30 + nameLen + extraLen + compSize;
+        }
+        return false;
     }
 }

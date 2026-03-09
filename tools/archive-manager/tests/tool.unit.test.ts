@@ -6,7 +6,7 @@ if (!global.window) {
 }
 
 import { ArchiveManager } from "../src/tool";
-import type { ArchiveFormat } from "../src/tool";
+import type { ArchiveFormat, InputFile } from "../src/tool";
 
 // ── Helpers to build minimal archive buffers ───────────────────────────
 
@@ -312,5 +312,205 @@ describe('ArchiveManager error handling', () => {
         await expect(
             ArchiveManager.extractFile(file, 'missing.txt')
         ).rejects.toThrow('Entry not found');
+    });
+});
+
+// ── Archive creation tests ─────────────────────────────────────────────
+
+describe('ArchiveManager.createArchive ZIP', () => {
+    it('should create a valid ZIP with two files', async () => {
+        const enc = new TextEncoder();
+        const files: InputFile[] = [
+            { name: 'hello.txt', data: enc.encode('Hello, World!') },
+            { name: 'readme.md', data: enc.encode('# Readme') },
+        ];
+
+        const blob = await ArchiveManager.createArchive(files, { format: 'zip' });
+        expect(blob.size).toBeGreaterThan(0);
+        expect(blob.type).toBe('application/zip');
+
+        // Verify ZIP magic bytes (PK\x03\x04)
+        const data = new Uint8Array(await blob.arrayBuffer());
+        expect(data[0]).toBe(0x50);
+        expect(data[1]).toBe(0x4b);
+        expect(data[2]).toBe(0x03);
+        expect(data[3]).toBe(0x04);
+    });
+
+    it('should create a ZIP that can be extracted back', async () => {
+        const enc = new TextEncoder();
+        const dec = new TextDecoder();
+        const files: InputFile[] = [
+            { name: 'file1.txt', data: enc.encode('Content One') },
+            { name: 'folder/file2.txt', data: enc.encode('Content Two') },
+        ];
+
+        // Use level 0 (store) so extraction works without DecompressionStream in test env
+        const blob = await ArchiveManager.createArchive(files, { format: 'zip', compressionLevel: 0 });
+        const zipFile = new File([blob], 'created.zip');
+
+        // List entries
+        const entries = await ArchiveManager.listEntries(zipFile);
+        expect(entries.length).toBe(2);
+        const names = entries.map(e => e.name).sort();
+        expect(names).toEqual(['file1.txt', 'folder/file2.txt']);
+
+        // Extract all and verify contents
+        const extracted = await ArchiveManager.extractAll(zipFile);
+        expect(extracted.length).toBe(2);
+
+        const byName: Record<string, string> = {};
+        for (const f of extracted) {
+            byName[f.name] = dec.decode(f.data);
+        }
+        expect(byName['file1.txt']).toBe('Content One');
+        expect(byName['folder/file2.txt']).toBe('Content Two');
+    });
+
+    it('should respect compression level 0 (store)', async () => {
+        const enc = new TextEncoder();
+        const files: InputFile[] = [
+            { name: 'data.txt', data: enc.encode('Some data') },
+        ];
+
+        const blob = await ArchiveManager.createArchive(files, { format: 'zip', compressionLevel: 0 });
+        expect(blob.size).toBeGreaterThan(0);
+
+        // Should round-trip
+        const zipFile = new File([blob], 'stored.zip');
+        const extracted = await ArchiveManager.extractAll(zipFile);
+        expect(extracted.length).toBe(1);
+        expect(new TextDecoder().decode(extracted[0].data)).toBe('Some data');
+    });
+});
+
+describe('ArchiveManager.createArchive TAR', () => {
+    it('should create a valid TAR with two files', async () => {
+        const enc = new TextEncoder();
+        const files: InputFile[] = [
+            { name: 'a.txt', data: enc.encode('AAA') },
+            { name: 'b.txt', data: enc.encode('BBB') },
+        ];
+
+        const blob = await ArchiveManager.createArchive(files, { format: 'tar' });
+        expect(blob.size).toBeGreaterThan(0);
+        expect(blob.type).toBe('application/x-tar');
+
+        // Verify it's valid TAR by extracting
+        const tarFile = new File([blob], 'created.tar');
+        const entries = await ArchiveManager.listEntries(tarFile);
+        expect(entries.length).toBe(2);
+        expect(entries[0].name).toBe('a.txt');
+        expect(entries[1].name).toBe('b.txt');
+    });
+
+    it('should create a TAR that round-trips correctly', async () => {
+        const enc = new TextEncoder();
+        const dec = new TextDecoder();
+        const files: InputFile[] = [
+            { name: 'msg.txt', data: enc.encode('Hello TAR') },
+        ];
+
+        const blob = await ArchiveManager.createArchive(files, { format: 'tar' });
+        const tarFile = new File([blob], 'test.tar');
+
+        const extracted = await ArchiveManager.extractAll(tarFile);
+        expect(extracted.length).toBe(1);
+        expect(extracted[0].name).toBe('msg.txt');
+        expect(dec.decode(extracted[0].data)).toBe('Hello TAR');
+    });
+});
+
+describe('ArchiveManager.createArchive TAR.GZ', () => {
+    it('should create a valid TAR.GZ with gzip magic bytes', async () => {
+        const enc = new TextEncoder();
+        const files: InputFile[] = [
+            { name: 'compressed.txt', data: enc.encode('Compressed content here') },
+        ];
+
+        const blob = await ArchiveManager.createArchive(files, { format: 'tar.gz' });
+        expect(blob.size).toBeGreaterThan(0);
+        expect(blob.type).toBe('application/gzip');
+
+        // Verify GZ magic bytes
+        const data = new Uint8Array(await blob.arrayBuffer());
+        expect(data[0]).toBe(0x1f);
+        expect(data[1]).toBe(0x8b);
+    });
+
+    it('should create a TAR.GZ that round-trips correctly', async () => {
+        const enc = new TextEncoder();
+        const dec = new TextDecoder();
+        const files: InputFile[] = [
+            { name: 'file1.txt', data: enc.encode('First') },
+            { name: 'file2.txt', data: enc.encode('Second') },
+        ];
+
+        const blob = await ArchiveManager.createArchive(files, { format: 'tar.gz' });
+        const data = new Uint8Array(await blob.arrayBuffer());
+
+        // Verify gzip magic bytes
+        expect(data[0]).toBe(0x1f);
+        expect(data[1]).toBe(0x8b);
+
+        // Decompress using fflate (since DecompressionStream is unavailable in test env)
+        const fflate = await import('fflate');
+        const tarData = fflate.gunzipSync(data);
+
+        // Verify the decompressed data is a valid TAR
+        expect(ArchiveManager.detectFormatFromBytes(tarData)).toBe('tar');
+
+        // Parse it as a TAR file to verify contents
+        const tarFile = new File([tarData as BlobPart], 'test.tar');
+        const extracted = await ArchiveManager.extractAll(tarFile);
+        expect(extracted.length).toBe(2);
+
+        const byName: Record<string, string> = {};
+        for (const f of extracted) {
+            byName[f.name] = dec.decode(f.data);
+        }
+        expect(byName['file1.txt']).toBe('First');
+        expect(byName['file2.txt']).toBe('Second');
+    });
+});
+
+describe('ArchiveManager.createArchive edge cases', () => {
+    it('should handle empty file list for ZIP', async () => {
+        const blob = await ArchiveManager.createArchive([], { format: 'zip' });
+        expect(blob.size).toBeGreaterThan(0);
+    });
+
+    it('should handle empty file list for TAR', async () => {
+        const blob = await ArchiveManager.createArchive([], { format: 'tar' });
+        // TAR with no files still has end-of-archive marker (1024 bytes)
+        expect(blob.size).toBe(1024);
+    });
+
+    it('should throw for unsupported creation format', async () => {
+        await expect(
+            ArchiveManager.createArchive([], { format: 'rar' as any })
+        ).rejects.toThrow('Unsupported creation format');
+    });
+});
+
+describe('ArchiveManager.isZipEncrypted', () => {
+    it('should return false for a non-encrypted ZIP', () => {
+        const content = new TextEncoder().encode('test');
+        const zipData = buildMinimalZip('test.txt', content);
+        expect(ArchiveManager.isZipEncrypted(zipData)).toBe(false);
+    });
+
+    it('should return true when encryption flag is set', () => {
+        const content = new TextEncoder().encode('secret');
+        const zipData = buildMinimalZip('secret.txt', content);
+        // Set the encryption bit (bit 0) in the general purpose bit flag
+        // The flags field is at offset 6 in the local file header
+        zipData[6] = zipData[6] | 0x01;
+        expect(ArchiveManager.isZipEncrypted(zipData)).toBe(true);
+    });
+
+    it('should return false for non-ZIP data', () => {
+        const data = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0]);
+        expect(ArchiveManager.isZipEncrypted(data)).toBe(false);
     });
 });

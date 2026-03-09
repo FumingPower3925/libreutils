@@ -1,5 +1,5 @@
 import { ArchiveManager } from './tool';
-import type { ArchiveEntry, ExtractedFile } from './tool';
+import type { ArchiveEntry, ExtractedFile, InputFile, CreateArchiveFormat } from './tool';
 
 // Icons
 const ICONS = {
@@ -8,6 +8,7 @@ const ICONS = {
     file: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`,
     folder: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>`,
     download: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+    remove: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
 };
 
 function formatSize(bytes: number): string {
@@ -50,6 +51,8 @@ export function renderArchiveManagerPage(): HTMLElement {
       .btn-full { width: 100%; }
       .btn-secondary { background: var(--lu-bg-secondary, #f3f4f6); color: var(--lu-text-primary, #111827); border: 1px solid var(--lu-border, #e5e7eb); }
       .btn-secondary:hover { background: var(--lu-border, #e5e7eb); }
+      .btn-danger { background: transparent; color: var(--lu-error, #ef4444); border: none; padding: 0.25rem; cursor: pointer; display: inline-flex; align-items: center; }
+      .btn-danger:hover { color: var(--lu-error, #dc2626); }
 
       .progress-bar { height: 4px; background: var(--lu-bg-secondary, #f3f4f6); border-radius: 2px; overflow: hidden; margin-top: 0.75rem; display: none; }
       .progress-fill { height: 100%; background: var(--lu-primary-500, #613E9C); width: 0%; transition: width 0.2s; }
@@ -70,15 +73,27 @@ export function renderArchiveManagerPage(): HTMLElement {
       .entry-icon { flex-shrink: 0; color: var(--lu-text-secondary, #6b7280); display: flex; align-items: center; }
       .entry-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .entry-size { flex-shrink: 0; color: var(--lu-text-secondary, #6b7280); font-size: 0.8rem; margin-right: 0.5rem; }
-      .entry-actions { flex-shrink: 0; }
+      .entry-actions { flex-shrink: 0; display: flex; align-items: center; gap: 0.25rem; }
 
       .status-msg { text-align: center; padding: 1rem; color: var(--lu-text-secondary, #6b7280); font-size: 0.9rem; }
       .status-msg.error { color: var(--lu-error, #ef4444); }
+
+      .upload-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; align-items: center; flex-wrap: wrap; }
+
+      .compress-controls { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+      .control-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+      .control-row label { font-size: 0.85rem; font-weight: 600; color: var(--lu-text-primary, #111827); min-width: 5rem; }
+      .control-row select, .control-row input[type="range"] { font-size: 0.85rem; padding: 0.375rem 0.5rem; border: 1px solid var(--lu-border, #e5e7eb); border-radius: 0.375rem; background: var(--lu-bg-card, white); color: var(--lu-text-primary, #111827); color-scheme: light dark; }
+      .control-row select { min-width: 6rem; }
+      .control-row select option { background: var(--lu-bg-card, white); color: var(--lu-text-primary, #111827); }
+      .level-display { font-size: 0.85rem; color: var(--lu-text-secondary, #6b7280); min-width: 1.5rem; }
+
+      .encrypted-notice { background: var(--lu-warning-light, #fffbeb); border: 1px solid var(--lu-warning, #f59e0b); border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--lu-warning-dark, #92400e); margin-top: 0.75rem; }
     </style>
 
     <header class="header">
       <h1 class="title">${ICONS.archive} Archive Manager</h1>
-      <p class="subtitle">View and extract ZIP, TAR, and GZ archives in your browser</p>
+      <p class="subtitle">Create and extract ZIP, TAR, and GZ archives in your browser</p>
       <div style="font-size: 0.8rem; color: var(--lu-text-muted, #9ca3af); margin-top: 0.5rem;">
         100% Local Execution (Zero External Dependencies).
       </div>
@@ -87,9 +102,17 @@ export function renderArchiveManagerPage(): HTMLElement {
     <div class="card">
       <div class="drop-zone" id="archive-drop-zone">
         <div style="margin-bottom: 0.5rem; color: var(--lu-text-muted, #9ca3af);">${ICONS.upload}</div>
-        <div id="archive-file-label">Drop an archive file here or click to browse</div>
-        <div style="font-size: 0.8rem; color: var(--lu-text-muted, #9ca3af); margin-top: 0.5rem;">Supports ZIP, TAR, GZ, TAR.GZ, TGZ</div>
-        <input type="file" id="archive-file-input" accept=".zip,.tar,.gz,.tar.gz,.tgz" hidden>
+        <div id="archive-file-label">Drop files here or click to browse</div>
+        <div style="font-size: 0.8rem; color: var(--lu-text-muted, #9ca3af); margin-top: 0.5rem;">Drop an archive to extract, or regular files to create an archive</div>
+        <input type="file" id="archive-file-input" multiple hidden>
+      </div>
+
+      <div class="upload-actions" id="upload-actions" style="display:none;">
+        <button class="btn btn-sm btn-secondary" id="add-more-btn">${ICONS.upload} Add More Files</button>
+        <button class="btn btn-sm btn-secondary" id="folder-upload-btn">${ICONS.folder} Upload Folder</button>
+        <input type="file" id="add-more-input" multiple hidden>
+        <input type="file" id="folder-input" webkitdirectory hidden>
+        <button class="btn btn-sm btn-secondary" id="clear-files-btn">${ICONS.remove} Clear All</button>
       </div>
 
       <div class="progress-bar" id="archive-progress">
@@ -98,15 +121,51 @@ export function renderArchiveManagerPage(): HTMLElement {
 
       <div id="archive-status" class="status-msg" style="display:none;"></div>
 
-      <div class="result-area" id="archive-results">
+      <!-- Compress Mode -->
+      <div id="compress-mode" style="display:none;">
         <div class="result-header">
           <div>
-            <h3 id="archive-result-title">Archive Contents</h3>
-            <div class="result-summary" id="archive-result-summary"></div>
+            <h3>Files to Archive</h3>
+            <div class="result-summary" id="compress-summary"></div>
           </div>
-          <button class="btn btn-sm" id="btn-extract-all">${ICONS.download} Extract All</button>
         </div>
-        <div class="entry-list" id="archive-entry-list"></div>
+        <div class="entry-list" id="compress-file-list"></div>
+
+        <div class="compress-controls">
+          <div class="control-row">
+            <label for="archive-format">Format</label>
+            <select id="archive-format">
+              <option value="zip">ZIP</option>
+              <option value="tar">TAR</option>
+              <option value="tar.gz">TAR.GZ</option>
+            </select>
+          </div>
+
+          <div class="control-row" id="zip-options">
+            <label for="compression-level">Compression</label>
+            <input type="range" id="compression-level" min="0" max="9" value="6">
+            <span class="level-display" id="level-value">6</span>
+          </div>
+
+          <button class="btn btn-full" id="create-btn">${ICONS.archive} Create Archive</button>
+        </div>
+      </div>
+
+      <!-- Decompress Mode -->
+      <div id="decompress-mode" style="display:none;">
+        <div id="encrypted-notice" class="encrypted-notice" style="display:none;">
+          This archive appears to be password-protected. Password-protected archives are not yet supported.
+        </div>
+        <div class="result-area visible" id="archive-results">
+          <div class="result-header">
+            <div>
+              <h3 id="archive-result-title">Archive Contents</h3>
+              <div class="result-summary" id="archive-result-summary"></div>
+            </div>
+            <button class="btn btn-sm" id="btn-extract-all">${ICONS.download} Extract All</button>
+          </div>
+          <div class="entry-list" id="archive-entry-list"></div>
+        </div>
       </div>
     </div>
     `;
@@ -122,20 +181,52 @@ function setupEventListeners(container: HTMLElement) {
     const progressBar = container.querySelector('#archive-progress') as HTMLElement;
     const progressFill = container.querySelector('#archive-progress-fill') as HTMLElement;
     const statusMsg = container.querySelector('#archive-status') as HTMLElement;
-    const resultsArea = container.querySelector('#archive-results') as HTMLElement;
+    const uploadActions = container.querySelector('#upload-actions') as HTMLElement;
+    const addMoreBtn = container.querySelector('#add-more-btn') as HTMLButtonElement;
+    const addMoreInput = container.querySelector('#add-more-input') as HTMLInputElement;
+    const folderUploadBtn = container.querySelector('#folder-upload-btn') as HTMLButtonElement;
+    const folderInput = container.querySelector('#folder-input') as HTMLInputElement;
+    const clearFilesBtn = container.querySelector('#clear-files-btn') as HTMLButtonElement;
+
+    // Compress mode elements
+    const compressMode = container.querySelector('#compress-mode') as HTMLElement;
+    const compressFileList = container.querySelector('#compress-file-list') as HTMLElement;
+    const compressSummary = container.querySelector('#compress-summary') as HTMLElement;
+    const formatSelect = container.querySelector('#archive-format') as HTMLSelectElement;
+    const zipOptions = container.querySelector('#zip-options') as HTMLElement;
+    const compressionLevel = container.querySelector('#compression-level') as HTMLInputElement;
+    const levelValue = container.querySelector('#level-value') as HTMLElement;
+    const createBtn = container.querySelector('#create-btn') as HTMLButtonElement;
+
+    // Decompress mode elements
+    const decompressMode = container.querySelector('#decompress-mode') as HTMLElement;
     const entryList = container.querySelector('#archive-entry-list') as HTMLElement;
     const resultTitle = container.querySelector('#archive-result-title') as HTMLElement;
     const resultSummary = container.querySelector('#archive-result-summary') as HTMLElement;
     const extractAllBtn = container.querySelector('#btn-extract-all') as HTMLButtonElement;
+    const encryptedNotice = container.querySelector('#encrypted-notice') as HTMLElement;
 
-    let currentFile: File | null = null;
+    let currentArchiveFile: File | null = null;
     let currentEntries: ArchiveEntry[] = [];
+    let compressFiles: InputFile[] = [];
+    let currentMode: 'none' | 'compress' | 'decompress' = 'none';
 
     // Cleanup hook to free references
     cleanupHook = () => {
-        currentFile = null;
+        currentArchiveFile = null;
         currentEntries = [];
+        compressFiles = [];
     };
+
+    // Format selector updates
+    formatSelect.addEventListener('change', () => {
+        const isZip = formatSelect.value === 'zip';
+        zipOptions.style.display = isZip ? 'flex' : 'none';
+    });
+
+    compressionLevel.addEventListener('input', () => {
+        levelValue.textContent = compressionLevel.value;
+    });
 
     // Drop zone events
     dropZone.addEventListener('click', () => fileInput.click());
@@ -148,14 +239,36 @@ function setupEventListeners(container: HTMLElement) {
         e.preventDefault();
         dropZone.classList.remove('dragover');
         if (e.dataTransfer?.files.length) {
-            fileInput.files = e.dataTransfer.files;
-            handleFile(e.dataTransfer.files[0]);
+            handleFiles(Array.from(e.dataTransfer.files));
         }
     });
     fileInput.addEventListener('change', () => {
         if (fileInput.files?.length) {
-            handleFile(fileInput.files[0]);
+            handleFiles(Array.from(fileInput.files));
         }
+    });
+
+    // Add more files
+    addMoreBtn.addEventListener('click', () => addMoreInput.click());
+    addMoreInput.addEventListener('change', () => {
+        if (addMoreInput.files?.length) {
+            addFilesToCompress(Array.from(addMoreInput.files));
+        }
+        addMoreInput.value = '';
+    });
+
+    // Folder upload
+    folderUploadBtn.addEventListener('click', () => folderInput.click());
+    folderInput.addEventListener('change', () => {
+        if (folderInput.files?.length) {
+            addFilesToCompress(Array.from(folderInput.files));
+        }
+        folderInput.value = '';
+    });
+
+    // Clear all
+    clearFilesBtn.addEventListener('click', () => {
+        resetToInitial();
     });
 
     function showStatus(msg: string, isError = false) {
@@ -168,32 +281,83 @@ function setupEventListeners(container: HTMLElement) {
         statusMsg.style.display = 'none';
     }
 
-    async function handleFile(file: File) {
-        currentFile = file;
+    function resetToInitial() {
+        currentArchiveFile = null;
+        currentEntries = [];
+        compressFiles = [];
+        currentMode = 'none';
+        fileLabel.textContent = 'Drop files here or click to browse';
+        dropZone.classList.remove('has-file');
+        compressMode.style.display = 'none';
+        decompressMode.style.display = 'none';
+        uploadActions.style.display = 'none';
+        encryptedNotice.style.display = 'none';
+        progressBar.style.display = 'none';
+        hideStatus();
+        fileInput.value = '';
+    }
+
+    async function handleFiles(files: File[]) {
+        hideStatus();
+
+        if (files.length === 0) return;
+
+        // Check if the first file looks like an archive
+        const firstFile = files[0];
+        const format = ArchiveManager.detectFormat(firstFile);
+
+        // Also try magic bytes if extension-based detection fails
+        let isArchive = format !== 'unknown';
+        if (!isArchive && files.length === 1) {
+            // Try reading first few bytes
+            try {
+                const headerSlice = await firstFile.slice(0, 512).arrayBuffer();
+                const headerBytes = new Uint8Array(headerSlice);
+                const byteFormat = ArchiveManager.detectFormatFromBytes(headerBytes);
+                isArchive = byteFormat !== 'unknown';
+            } catch {
+                // Ignore errors in byte detection
+            }
+        }
+
+        if (isArchive && files.length === 1) {
+            // Decompress mode
+            enterDecompressMode(firstFile);
+        } else {
+            // Compress mode
+            enterCompressMode(files);
+        }
+    }
+
+    async function enterDecompressMode(file: File) {
+        currentMode = 'decompress';
+        currentArchiveFile = file;
+        compressFiles = [];
+
         fileLabel.textContent = `${file.name} (${formatSize(file.size)})`;
         dropZone.classList.add('has-file');
-        resultsArea.classList.remove('visible');
-        hideStatus();
+        compressMode.style.display = 'none';
+        decompressMode.style.display = 'block';
+        uploadActions.style.display = 'none';
+        encryptedNotice.style.display = 'none';
 
         // Show progress
         progressBar.style.display = 'block';
         progressFill.style.width = '30%';
 
         try {
-            const format = ArchiveManager.detectFormat(file);
-            if (format === 'unknown') {
-                // Also try byte detection
-                showStatus('Unsupported archive format. Please use ZIP, TAR, GZ, or TAR.GZ files.', true);
-                progressBar.style.display = 'none';
-                return;
+            // Check if it's an encrypted ZIP
+            const data = new Uint8Array(await file.arrayBuffer());
+            const byteFormat = ArchiveManager.detectFormatFromBytes(data);
+            if (byteFormat === 'zip' && ArchiveManager.isZipEncrypted(data)) {
+                encryptedNotice.style.display = 'block';
             }
 
             progressFill.style.width = '60%';
             currentEntries = await ArchiveManager.listEntries(file);
             progressFill.style.width = '100%';
 
-            // Render entries
-            renderEntries();
+            renderDecompressEntries();
 
             setTimeout(() => {
                 progressBar.style.display = 'none';
@@ -205,7 +369,124 @@ function setupEventListeners(container: HTMLElement) {
         }
     }
 
-    function renderEntries() {
+    async function enterCompressMode(files: File[]) {
+        currentMode = 'compress';
+        currentArchiveFile = null;
+        currentEntries = [];
+        compressFiles = [];
+
+        dropZone.classList.add('has-file');
+        compressMode.style.display = 'block';
+        decompressMode.style.display = 'none';
+        uploadActions.style.display = 'flex';
+        encryptedNotice.style.display = 'none';
+
+        await addFilesToCompress(files);
+    }
+
+    async function addFilesToCompress(files: File[]) {
+        for (const file of files) {
+            const data = new Uint8Array(await file.arrayBuffer());
+            // Use webkitRelativePath if available (folder upload), otherwise just file name
+            const name = (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+            compressFiles.push({ name, data });
+        }
+
+        renderCompressFileList();
+    }
+
+    function renderCompressFileList() {
+        const totalSize = compressFiles.reduce((sum, f) => sum + f.data.length, 0);
+        const count = compressFiles.length;
+        fileLabel.textContent = `${count} file${count !== 1 ? 's' : ''} selected (${formatSize(totalSize)})`;
+        compressSummary.textContent = `${count} file${count !== 1 ? 's' : ''} | Total: ${formatSize(totalSize)}`;
+
+        compressFileList.innerHTML = '';
+        compressFiles.forEach((file, index) => {
+            const item = document.createElement('div');
+            item.className = 'entry-item';
+            item.innerHTML = `
+                <div class="entry-info">
+                    <span class="entry-icon">${ICONS.file}</span>
+                    <span class="entry-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
+                </div>
+                <span class="entry-size">${formatSize(file.data.length)}</span>
+                <div class="entry-actions">
+                    <button class="btn-danger btn-remove-file" data-index="${index}" title="Remove">${ICONS.remove}</button>
+                </div>
+            `;
+            compressFileList.appendChild(item);
+        });
+
+        // Attach remove handlers
+        compressFileList.querySelectorAll('.btn-remove-file').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const target = e.currentTarget as HTMLButtonElement;
+                const idx = parseInt(target.getAttribute('data-index') || '0', 10);
+                compressFiles.splice(idx, 1);
+                if (compressFiles.length === 0) {
+                    resetToInitial();
+                } else {
+                    renderCompressFileList();
+                }
+            });
+        });
+    }
+
+    // Create archive button
+    createBtn.addEventListener('click', async () => {
+        if (compressFiles.length === 0) {
+            showStatus('Please add files to create an archive.', true);
+            return;
+        }
+
+        createBtn.disabled = true;
+        createBtn.textContent = 'Creating...';
+        progressBar.style.display = 'block';
+        progressFill.style.width = '30%';
+        hideStatus();
+
+        try {
+            const format = formatSelect.value as CreateArchiveFormat;
+            const level = parseInt(compressionLevel.value, 10);
+
+            progressFill.style.width = '60%';
+
+            const blob = await ArchiveManager.createArchive(compressFiles, {
+                format,
+                compressionLevel: level,
+            });
+
+            progressFill.style.width = '100%';
+
+            // Generate filename
+            const ext = format === 'tar.gz' ? '.tar.gz' : `.${format}`;
+            const archiveName = `archive${ext}`;
+
+            // Download
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = archiveName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showStatus(`Archive created successfully (${formatSize(blob.size)})`);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            showStatus(`Error creating archive: ${message}`, true);
+        } finally {
+            createBtn.disabled = false;
+            createBtn.innerHTML = `${ICONS.archive} Create Archive`;
+            setTimeout(() => {
+                progressBar.style.display = 'none';
+            }, 300);
+        }
+    });
+
+    function renderDecompressEntries() {
         const fileCount = currentEntries.filter(e => !e.isDirectory).length;
         const dirCount = currentEntries.filter(e => e.isDirectory).length;
         const totalSize = currentEntries.reduce((sum, e) => sum + e.size, 0);
@@ -242,11 +523,11 @@ function setupEventListeners(container: HTMLElement) {
             btn.addEventListener('click', async (e) => {
                 const target = e.currentTarget as HTMLButtonElement;
                 const entryName = target.getAttribute('data-name');
-                if (!entryName || !currentFile) return;
+                if (!entryName || !currentArchiveFile) return;
                 target.disabled = true;
                 target.textContent = 'Extracting...';
                 try {
-                    const extracted = await ArchiveManager.extractFile(currentFile, entryName);
+                    const extracted = await ArchiveManager.extractFile(currentArchiveFile, entryName);
                     downloadFile(extracted);
                 } catch (err: unknown) {
                     const message = err instanceof Error ? err.message : String(err);
@@ -257,30 +538,25 @@ function setupEventListeners(container: HTMLElement) {
                 }
             });
         });
-
-        resultsArea.classList.add('visible');
     }
 
     // Extract All
     extractAllBtn.addEventListener('click', async () => {
-        if (!currentFile) return;
+        if (!currentArchiveFile) return;
         extractAllBtn.disabled = true;
         extractAllBtn.textContent = 'Extracting...';
         progressBar.style.display = 'block';
         progressFill.style.width = '0%';
 
         try {
-            const files = await ArchiveManager.extractAll(currentFile);
+            const files = await ArchiveManager.extractAll(currentArchiveFile);
             progressFill.style.width = '80%';
 
             if (files.length === 1) {
-                // Single file — download directly
                 downloadFile(files[0]);
             } else if (files.length > 1) {
-                // Multiple files — download each individually
                 for (const file of files) {
                     downloadFile(file);
-                    // Small delay so the browser doesn't block multiple downloads
                     await new Promise(r => setTimeout(r, 100));
                 }
             }
@@ -305,7 +581,6 @@ function downloadFile(file: ExtractedFile) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    // Use just the filename part (strip directory paths)
     a.download = file.name.split('/').pop() || file.name;
     document.body.appendChild(a);
     a.click();
