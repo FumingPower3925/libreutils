@@ -21,6 +21,7 @@ No server uploads · No tracking · No ads · Open Source (AGPL-3.0)
 | Password Generator | Secure, unique, and memorable password generation | Ready |
 | Encryptor / Decryptor | AES-GCM and ChaCha20 encryption for text and files | Ready |
 | Checksum Generator | Generate and verify file hashes (MD5, SHA-1/256/384/512, BLAKE3) | Ready |
+| Metadata Scrubber | Remove sensitive metadata from files (PDFs, images, videos, audio) before sharing | Ready |
 
 ## Quick Start
 

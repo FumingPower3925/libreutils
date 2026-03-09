@@ -15,6 +15,13 @@
       "name": "@libreutils/shared",
       "version": "0.2.0",
     },
+    "tools/archive-manager": {
+      "name": "@libreutils/tool-archive-manager",
+      "version": "1.0.0",
+      "dependencies": {
+        "@libreutils/shared": "file:../../shared",
+      },
+    },
     "tools/checksum-generator": {
       "name": "@libreutils/checksum-generator",
       "version": "1.0.0",
@@ -24,6 +31,13 @@
     },
     "tools/encryption-decryption": {
       "name": "@libreutils/encryption-decryption",
+      "version": "1.0.0",
+      "dependencies": {
+        "@libreutils/shared": "file:../../shared",
+      },
+    },
+    "tools/image-compressor": {
+      "name": "@libreutils/tool-image-compressor",
       "version": "1.0.0",
       "dependencies": {
         "@libreutils/shared": "file:../../shared",
@@ -60,6 +74,10 @@
     "@libreutils/encryption-decryption": ["@libreutils/encryption-decryption@workspace:tools/encryption-decryption"],
 
     "@libreutils/shared": ["@libreutils/shared@workspace:shared"],
+
+    "@libreutils/tool-archive-manager": ["@libreutils/tool-archive-manager@workspace:tools/archive-manager"],
+
+    "@libreutils/tool-image-compressor": ["@libreutils/tool-image-compressor@workspace:tools/image-compressor"],
 
     "@libreutils/tool-metadata-scrubber": ["@libreutils/tool-metadata-scrubber@workspace:tools/metadata-scrubber"],
 
@@ -112,6 +130,10 @@
     "@libreutils/checksum-generator/@libreutils/shared": ["@libreutils/shared@file:shared", {}],
 
     "@libreutils/encryption-decryption/@libreutils/shared": ["@libreutils/shared@file:shared", {}],
+
+    "@libreutils/tool-archive-manager/@libreutils/shared": ["@libreutils/shared@file:shared", {}],
+
+    "@libreutils/tool-image-compressor/@libreutils/shared": ["@libreutils/shared@file:shared", {}],
 
     "@libreutils/tool-metadata-scrubber/@libreutils/shared": ["@libreutils/shared@file:shared", {}],
 

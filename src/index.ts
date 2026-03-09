@@ -3,11 +3,15 @@ import '@libreutils/shared/styles/index.css';
 
 import { renderHomePage } from './pages/home';
 import { renderAboutPage } from './pages/about';
+import { renderLegalPage } from './pages/legal';
 import { renderNotFoundPage } from './pages/not-found';
 import { renderTextEncoderPage, secureCleanup as cleanupTextEncoder } from '../tools/text-encoder/src/page';
 import { renderPasswordGeneratorPage, secureCleanup as cleanupPasswordGenerator } from '../tools/password-generator/src/page';
 import { renderEncryptorPage, secureCleanup as cleanupEncryptor } from '../tools/encryption-decryption/src/page';
 import { renderChecksumPage } from '../tools/checksum-generator/src/page';
+import { renderMetadataScrubberPage, secureCleanup as cleanupMetadataScrubber } from '../tools/metadata-scrubber/src/page';
+import { renderArchiveManagerPage, secureCleanup as cleanupArchiveManager } from '../tools/archive-manager/src/page';
+import { renderImageCompressorPage, secureCleanup as cleanupImageCompressor } from '../tools/image-compressor/src/page';
 
 function initTheme(): void {
     const stored = localStorage.getItem('lu-theme');
@@ -114,6 +118,7 @@ function showUpdateToast(version?: string): void {
 const routes: Route[] = [
     { path: '/', title: 'Home', render: renderHomePage },
     { path: '/about', title: 'About', render: renderAboutPage },
+    { path: '/legal', title: 'Legal', render: renderLegalPage },
     {
         path: '/tools/text-encoder',
         title: 'Text Encoder / Decoder',
@@ -136,6 +141,24 @@ const routes: Route[] = [
         path: '/tools/checksum-generator',
         title: 'Checksum Generator',
         render: renderChecksumPage
+    },
+    {
+        path: '/tools/metadata-scrubber',
+        title: 'Metadata Scrubber',
+        render: renderMetadataScrubberPage,
+        onLeave: cleanupMetadataScrubber
+    },
+    {
+        path: '/tools/archive-manager',
+        title: 'Archive Manager',
+        render: renderArchiveManagerPage,
+        onLeave: cleanupArchiveManager
+    },
+    {
+        path: '/tools/image-compressor',
+        title: 'Image Compressor',
+        render: renderImageCompressorPage,
+        onLeave: cleanupImageCompressor
     },
 ];
 

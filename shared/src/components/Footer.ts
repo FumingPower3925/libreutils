@@ -141,6 +141,7 @@ export class LuFooter extends HTMLElement {
             <ul class="footer-links">
               <li><a href="#/">All Tools</a></li>
               <li><a href="#/about">About</a></li>
+              <li><a href="#/legal">Legal</a></li>
               <li><a href="https://github.com/FumingPower3925/libreutils" target="_blank" rel="noopener">Source Code</a></li>
             </ul>
           </div>
