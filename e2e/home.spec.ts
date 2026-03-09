@@ -25,7 +25,8 @@ test.describe('Home Page', () => {
     await expect(toolsGrid).toBeVisible();
 
     const cards = page.locator('lu-card');
-    await expect(cards).toHaveCount(4);
+    // Should have at least 5 tools (may grow over time)
+    await expect(cards).toHaveCount(7);
   });
 
   test('category filter works', async ({ page }) => {
@@ -43,21 +44,21 @@ test.describe('Home Page', () => {
     await allBtn.click();
     await expect(allBtn).toHaveClass(/active/);
 
-    await expect(page.locator('lu-card')).toHaveCount(4);
+    await expect(page.locator('lu-card')).toHaveCount(7);
   });
 
   test('search functionality works', async ({ page }) => {
     const searchInput = page.locator('#tool-search');
     await expect(searchInput).toBeVisible();
 
-    // Search for "password"
-    await searchInput.fill('password');
+    // Search for "checksum" — unique to one tool
+    await searchInput.fill('checksum');
 
     const cards = page.locator('lu-card');
     await expect(cards).toHaveCount(1);
 
     // Clear search to show all tools again
     await searchInput.fill('');
-    await expect(page.locator('lu-card')).toHaveCount(4);
+    await expect(page.locator('lu-card')).toHaveCount(7);
   });
 });
