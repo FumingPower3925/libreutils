@@ -14,12 +14,12 @@ export interface ExtractedFile {
 
 export type ArchiveFormat = 'zip' | 'tar' | 'tar.gz' | 'gz' | 'unknown';
 
-export type CreateArchiveFormat = 'zip' | 'tar' | 'tar.gz';
+export type CreateArchiveFormat = 'zip' | 'tar' | 'tar.gz' | '7z' | 'tar.bz2' | 'tar.xz';
 
 export interface CreateArchiveOptions {
     format: CreateArchiveFormat;
-    compressionLevel?: number; // 0-9 for ZIP
-    password?: string; // ZIP only (not yet supported)
+    compressionLevel?: number; // 0-9
+    password?: string;
 }
 
 export interface InputFile {
@@ -304,23 +304,53 @@ export class ArchiveManager {
     /**
      * Detect the archive format based on magic bytes and file extension.
      */
-    static detectFormat(file: File): ArchiveFormat {
+    static detectFormat(file: File): ArchiveFormat | 'rar' | '7z' | 'bz2' | 'xz' {
         const name = file.name.toLowerCase();
         if (name.endsWith('.tar.gz') || name.endsWith('.tgz')) return 'tar.gz';
+        if (name.endsWith('.tar.bz2') || name.endsWith('.tbz2')) return 'bz2';
+        if (name.endsWith('.tar.xz') || name.endsWith('.txz')) return 'xz';
         if (name.endsWith('.gz')) return 'gz';
+        if (name.endsWith('.bz2')) return 'bz2';
+        if (name.endsWith('.xz')) return 'xz';
         if (name.endsWith('.tar')) return 'tar';
         if (name.endsWith('.zip')) return 'zip';
+        if (name.endsWith('.rar')) return 'rar';
+        if (name.endsWith('.7z')) return '7z';
         return 'unknown';
     }
 
     /**
      * Detect archive format from data bytes.
      */
-    static detectFormatFromBytes(data: Uint8Array): ArchiveFormat {
+    static detectFormatFromBytes(data: Uint8Array): ArchiveFormat | 'rar' | '7z' | 'bz2' | 'xz' {
         if (data.length >= 4) {
             // ZIP magic: PK\x03\x04
             if (data[0] === 0x50 && data[1] === 0x4b && data[2] === 0x03 && data[3] === 0x04) {
                 return 'zip';
+            }
+        }
+        if (data.length >= 7) {
+            // RAR magic: Rar!\x1a\x07\x00 (RAR4) or Rar!\x1a\x07\x01 (RAR5)
+            if (data[0] === 0x52 && data[1] === 0x61 && data[2] === 0x72 && data[3] === 0x21 && data[4] === 0x1a && data[5] === 0x07) {
+                return 'rar';
+            }
+        }
+        if (data.length >= 6) {
+            // 7z magic: 7z\xBC\xAF\x27\x1C
+            if (data[0] === 0x37 && data[1] === 0x7a && data[2] === 0xbc && data[3] === 0xaf && data[4] === 0x27 && data[5] === 0x1c) {
+                return '7z';
+            }
+        }
+        if (data.length >= 3) {
+            // BZ2 magic: BZh
+            if (data[0] === 0x42 && data[1] === 0x5a && data[2] === 0x68) {
+                return 'bz2';
+            }
+        }
+        if (data.length >= 6) {
+            // XZ magic: \xFD7zXZ\x00
+            if (data[0] === 0xfd && data[1] === 0x37 && data[2] === 0x7a && data[3] === 0x58 && data[4] === 0x5a && data[5] === 0x00) {
+                return 'xz';
             }
         }
         if (data.length >= 2) {
@@ -337,6 +367,8 @@ export class ArchiveManager {
 
     /**
      * List all entries in an archive file.
+     * Tries our fast built-in parsers first, falls back to libarchive for
+     * encrypted, RAR, 7z, bz2, xz, or otherwise unsupported formats.
      */
     static async listEntries(file: File): Promise<ArchiveEntry[]> {
         const data = new Uint8Array(await file.arrayBuffer());
@@ -345,6 +377,17 @@ export class ArchiveManager {
         // Fallback to extension-based detection
         if (format === 'unknown') {
             format = this.detectFormat(file);
+        }
+
+        // 7z uses 7z-wasm for listing (handles encrypted headers)
+        if (format === '7z') {
+            return this.listEntriesVia7zWasm(file);
+        }
+
+        // Encrypted ZIPs or formats only libarchive can handle
+        const libarchiveFormats = ['rar', 'bz2', 'xz'];
+        if ((format === 'zip' && this.isZipEncrypted(data)) || libarchiveFormats.includes(format)) {
+            return this.listEntriesViaLibarchive(file);
         }
 
         switch (format) {
@@ -358,7 +401,6 @@ export class ArchiveManager {
                 if (isTarData(decompressed)) {
                     return this.listTarEntries(decompressed);
                 }
-                // Single gz file — return the decompressed content as one entry
                 const baseName = file.name.replace(/\.gz$/i, '').replace(/\.tgz$/i, '.tar');
                 return [{
                     name: baseName || 'decompressed',
@@ -367,18 +409,34 @@ export class ArchiveManager {
                 }];
             }
             default:
-                throw new Error(`Unsupported or unrecognizable archive format`);
+                throw new Error('Unsupported or unrecognizable archive format');
         }
     }
 
     /**
      * Extract a single file from the archive by entry name.
      */
-    static async extractFile(file: File, entryName: string): Promise<ExtractedFile> {
+    static async extractFile(file: File, entryName: string, password?: string): Promise<ExtractedFile> {
         const data = new Uint8Array(await file.arrayBuffer());
         let format = this.detectFormatFromBytes(data);
         if (format === 'unknown') {
             format = this.detectFormat(file);
+        }
+
+        // Encrypted ZIPs use zip.js for password-based extraction
+        if (format === 'zip' && this.isZipEncrypted(data)) {
+            if (!password) throw new Error('This archive is password-protected. Please enter the password.');
+            return this.extractFileViaZipJs(file, entryName, password);
+        }
+
+        // 7z with password uses 7z-wasm for extraction
+        if (format === '7z' && password) {
+            return this.extractFileVia7zWasm(file, entryName, password);
+        }
+
+        const libarchiveFormats = ['rar', '7z', 'bz2', 'xz'];
+        if (libarchiveFormats.includes(format)) {
+            return this.extractFileViaLibarchive(file, entryName);
         }
 
         switch (format) {
@@ -409,23 +467,38 @@ export class ArchiveManager {
                     const extracted = decompressed.slice(entry.dataOffset, entry.dataOffset + entry.size);
                     return { name: entry.name, data: extracted, size: extracted.length };
                 }
-                // Single gz file
                 const baseName = file.name.replace(/\.gz$/i, '').replace(/\.tgz$/i, '.tar');
                 return { name: baseName || 'decompressed', data: decompressed, size: decompressed.length };
             }
             default:
-                throw new Error(`Unsupported or unrecognizable archive format`);
+                throw new Error('Unsupported or unrecognizable archive format');
         }
     }
 
     /**
      * Extract all files from the archive.
      */
-    static async extractAll(file: File): Promise<ExtractedFile[]> {
+    static async extractAll(file: File, password?: string): Promise<ExtractedFile[]> {
         const data = new Uint8Array(await file.arrayBuffer());
         let format = this.detectFormatFromBytes(data);
         if (format === 'unknown') {
             format = this.detectFormat(file);
+        }
+
+        // Encrypted ZIPs use zip.js for password-based extraction
+        if (format === 'zip' && this.isZipEncrypted(data)) {
+            if (!password) throw new Error('This archive is password-protected. Please enter the password.');
+            return this.extractAllViaZipJs(file, password);
+        }
+
+        // 7z with password uses 7z-wasm for extraction
+        if (format === '7z' && password) {
+            return this.extractAllVia7zWasm(file, password);
+        }
+
+        const libarchiveFormats = ['rar', '7z', 'bz2', 'xz'];
+        if (libarchiveFormats.includes(format)) {
+            return this.extractAllViaLibarchive(file);
         }
 
         switch (format) {
@@ -452,7 +525,7 @@ export class ArchiveManager {
                 return [{ name: baseName || 'decompressed', data: decompressed, size: decompressed.length }];
             }
             default:
-                throw new Error(`Unsupported or unrecognizable archive format`);
+                throw new Error('Unsupported or unrecognizable archive format');
         }
     }
 
@@ -495,13 +568,32 @@ export class ArchiveManager {
      * Create an archive from a list of input files.
      */
     static async createArchive(files: InputFile[], options: CreateArchiveOptions): Promise<Blob> {
+        // Password-protected ZIP uses zip.js (native AES-256, standard compatible)
+        if (options.password && options.format === 'zip') {
+            return this.createZipWithPassword(files, options);
+        }
+
+        // Password-protected 7z uses 7z-wasm (AES-256 with encrypted headers)
+        if (options.password && options.format === '7z') {
+            return this.createVia7zWasm(files, options);
+        }
+
+        // TAR-based formats don't support encryption
+        if (options.password) {
+            throw new Error(`Format "${options.format}" does not support password protection. Use ZIP or 7z.`);
+        }
+
         switch (options.format) {
             case 'zip':
                 return this.createZip(files, options);
             case 'tar':
                 return this.createTar(files);
             case 'tar.gz':
-                return this.createTarGz(files);
+                return this.createTarGz(files, options);
+            case '7z':
+            case 'tar.bz2':
+            case 'tar.xz':
+                return this.createViaLibarchive(files, options);
             default:
                 throw new Error(`Unsupported creation format: ${(options as CreateArchiveOptions).format}`);
         }
@@ -581,17 +673,317 @@ export class ArchiveManager {
     /**
      * Create a TAR.GZ archive (TAR + gzip compression via fflate).
      */
-    private static async createTarGz(files: InputFile[]): Promise<Blob> {
+    private static async createTarGz(files: InputFile[], options?: CreateArchiveOptions): Promise<Blob> {
         const tarBlob = this.createTar(files);
         const tarData = new Uint8Array(await tarBlob.arrayBuffer());
 
         const fflate = await import('fflate');
-        const gzipped = fflate.gzipSync(tarData);
+        const level = (options?.compressionLevel ?? 6) as 0|1|2|3|4|5|6|7|8|9;
+        const gzipped = fflate.gzipSync(tarData, { level });
 
         return new Blob([gzipped as BlobPart], { type: 'application/gzip' });
     }
 
-    // ── Encryption detection ──────────────────────────────────────────
+    /**
+     * Create archives via libarchive.js (7Z, TAR.BZ2, TAR.XZ — no password support).
+     */
+    private static async createViaLibarchive(files: InputFile[], options: CreateArchiveOptions): Promise<Blob> {
+        const { Archive, ArchiveFormat, ArchiveCompression } = await this.getLibarchive();
+        const fileObjects = files.map(f => ({
+            file: new File([f.data as BlobPart], f.name),
+            pathname: f.name,
+        }));
+
+        const formatMap: Record<string, { format: string; compression: string; ext: string }> = {
+            '7z':      { format: ArchiveFormat.SEVEN_ZIP, compression: ArchiveCompression.NONE,  ext: '7z' },
+            'tar':     { format: ArchiveFormat.GNUTAR,    compression: ArchiveCompression.NONE,  ext: 'tar' },
+            'tar.gz':  { format: ArchiveFormat.GNUTAR,    compression: ArchiveCompression.GZIP,  ext: 'tar.gz' },
+            'tar.bz2': { format: ArchiveFormat.GNUTAR,    compression: ArchiveCompression.BZIP2, ext: 'tar.bz2' },
+            'tar.xz':  { format: ArchiveFormat.GNUTAR,    compression: ArchiveCompression.XZ,    ext: 'tar.xz' },
+        };
+
+        const mapping = formatMap[options.format];
+        if (!mapping) throw new Error(`Unsupported libarchive format: ${options.format}`);
+
+        // libarchive.js d.ts has a broken recursive type for ArchiveEntryFile — cast needed
+        const result = await Archive.write({
+            files: fileObjects as any,
+            outputFileName: `archive.${mapping.ext}`,
+            format: mapping.format,
+            compression: mapping.compression,
+        } as any);
+
+        const blob = result as Blob;
+        if (blob.size === 0) {
+            throw new Error('Archive creation produced empty output');
+        }
+        return blob;
+    }
+
+    /**
+     * Create a password-protected 7z archive using 7z-wasm (AES-256 with encrypted headers).
+     */
+    private static async createVia7zWasm(files: InputFile[], options: CreateArchiveOptions): Promise<Blob> {
+        const SevenZip = (await import('7z-wasm')).default;
+        const sevenZip = await SevenZip({ stdin: () => -1, print: () => {}, printErr: () => {} });
+
+        // Write input files to Emscripten MEMFS
+        const filePaths: string[] = [];
+        for (const file of files) {
+            // Create parent directories if needed
+            const parts = file.name.split('/');
+            if (parts.length > 1) {
+                let dir = '';
+                for (let i = 0; i < parts.length - 1; i++) {
+                    dir += (dir ? '/' : '') + parts[i];
+                    try { sevenZip.FS.mkdir(dir); } catch { /* already exists */ }
+                }
+            }
+            sevenZip.FS.writeFile(file.name, file.data);
+            filePaths.push(file.name);
+        }
+
+        const outputPath = '/archive.7z';
+        const args = ['a', `-p${options.password}`, '-mhe=on', outputPath, ...filePaths];
+        sevenZip.callMain(args);
+
+        const result = sevenZip.FS.readFile(outputPath);
+        if (result.length === 0) {
+            throw new Error('7z archive creation produced empty output');
+        }
+        return new Blob([result as BlobPart], { type: 'application/x-7z-compressed' });
+    }
+
+    /**
+     * Create a password-protected ZIP using zip.js (AES-256 encryption).
+     */
+    private static async createZipWithPassword(files: InputFile[], options: CreateArchiveOptions): Promise<Blob> {
+        const { BlobWriter, Uint8ArrayReader, ZipWriter } = await import('@zip.js/zip.js');
+        const blobWriter = new BlobWriter('application/zip');
+        const writer = new ZipWriter(blobWriter, { password: options.password });
+
+        for (const file of files) {
+            await writer.add(file.name, new Uint8ArrayReader(file.data), {
+                level: options.compressionLevel ?? 6,
+            });
+        }
+
+        const blob = await writer.close();
+        return blob;
+    }
+
+    /**
+     * List entries via libarchive.js (handles RAR, 7z, encrypted ZIPs, etc.).
+     */
+    private static async listEntriesViaLibarchive(file: File): Promise<ArchiveEntry[]> {
+        const { Archive } = await this.getLibarchive();
+        const reader = await Archive.open(file);
+        await reader.getFilesObject();
+        const filesArray = await reader.getFilesArray();
+        const entries: ArchiveEntry[] = [];
+
+        for (const item of filesArray) {
+            if (item.file) {
+                entries.push({
+                    name: item.path || item.file.name,
+                    size: item.file.size,
+                    isDirectory: false,
+                });
+            }
+        }
+
+        await reader.close();
+        return entries;
+    }
+
+    /**
+     * Extract a single file via libarchive.js.
+     */
+    private static async extractFileViaLibarchive(file: File, entryName: string): Promise<ExtractedFile> {
+        const { Archive } = await this.getLibarchive();
+        const reader = await Archive.open(file);
+        const extractedFile = await reader.extractSingleFile(entryName);
+        const data = new Uint8Array(await extractedFile.arrayBuffer());
+        return { name: extractedFile.name, data, size: data.length };
+    }
+
+    /**
+     * Extract all files via libarchive.js.
+     */
+    private static async extractAllViaLibarchive(file: File): Promise<ExtractedFile[]> {
+        const { Archive } = await this.getLibarchive();
+        const reader = await Archive.open(file);
+        const filesArray = await reader.getFilesArray();
+        const results: ExtractedFile[] = [];
+
+        for (const item of filesArray) {
+            if (item.file) {
+                const data = new Uint8Array(await item.file.arrayBuffer());
+                results.push({
+                    name: item.path || item.file.name,
+                    data,
+                    size: data.length,
+                });
+            }
+        }
+
+        await reader.close();
+        return results;
+    }
+
+    /**
+     * Extract a single file from an encrypted ZIP using zip.js.
+     */
+    private static async extractFileViaZipJs(file: File, entryName: string, password: string): Promise<ExtractedFile> {
+        const { BlobReader, ZipReader, Uint8ArrayWriter } = await import('@zip.js/zip.js');
+        const reader = new ZipReader(new BlobReader(file), { password });
+        const entries = await reader.getEntries();
+        const entry = entries.find(e => e.filename === entryName);
+        if (!entry) throw new Error(`Entry not found: ${entryName}`);
+        if (entry.directory) throw new Error(`Cannot extract directory: ${entryName}`);
+        const data = await entry.getData!(new Uint8ArrayWriter());
+        await reader.close();
+        return { name: entry.filename, data, size: data.length };
+    }
+
+    /**
+     * Extract all files from an encrypted ZIP using zip.js.
+     */
+    private static async extractAllViaZipJs(file: File, password: string): Promise<ExtractedFile[]> {
+        const { BlobReader, ZipReader, Uint8ArrayWriter } = await import('@zip.js/zip.js');
+        const reader = new ZipReader(new BlobReader(file), { password });
+        const entries = await reader.getEntries();
+        const results: ExtractedFile[] = [];
+        for (const entry of entries) {
+            if (entry.directory) continue;
+            const data = await entry.getData!(new Uint8ArrayWriter());
+            results.push({ name: entry.filename, data, size: data.length });
+        }
+        await reader.close();
+        return results;
+    }
+
+    /**
+     * List entries from a 7z archive using 7z-wasm (supports encrypted headers).
+     */
+    static async listEntriesVia7zWasm(file: File, password?: string): Promise<ArchiveEntry[]> {
+        const SevenZip = (await import('7z-wasm')).default;
+
+        // Capture stdout to parse listing; always pass -p to prevent stdin prompt
+        const lines: string[] = [];
+        const sevenZip = await SevenZip({
+            stdin: () => -1,
+            print: (s: string) => lines.push(s),
+            printErr: () => {},
+        });
+
+        const archiveData = new Uint8Array(await file.arrayBuffer());
+        const archivePath = `/${file.name}`;
+        sevenZip.FS.writeFile(archivePath, archiveData);
+
+        const pw = password ?? '';
+        sevenZip.callMain(['l', `-p${pw}`, archivePath]);
+
+        // Parse 7z list output — entries are between separator lines (----)
+        const entries: ArchiveEntry[] = [];
+        let inEntries = false;
+        let separatorCount = 0;
+        for (const line of lines) {
+            if (line.startsWith('---')) {
+                separatorCount++;
+                if (separatorCount === 1) inEntries = true;
+                else if (separatorCount === 2) break;
+                continue;
+            }
+            if (!inEntries) continue;
+            // Format: "Date Time Attr Size Compressed Name"
+            // Example: "2024-01-01 12:00:00 ....A      1234       500  file.txt"
+            const match = line.match(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+(\S+)\s+(\d+)\s+\d+\s+(.+)$/);
+            if (match) {
+                const attr = match[1];
+                const size = parseInt(match[2], 10);
+                const name = match[3].trim();
+                const isDirectory = attr.includes('D');
+                entries.push({ name, size, isDirectory });
+            }
+        }
+        return entries;
+    }
+
+    /**
+     * Extract a single file from a 7z archive using 7z-wasm.
+     */
+    private static async extractFileVia7zWasm(file: File, entryName: string, password: string): Promise<ExtractedFile> {
+        const files = await this.extract7zWasm(file, password, entryName);
+        if (files.length === 0) throw new Error(`Entry not found: ${entryName}`);
+        return files[0];
+    }
+
+    /**
+     * Extract all files from a 7z archive using 7z-wasm.
+     */
+    private static async extractAllVia7zWasm(file: File, password: string): Promise<ExtractedFile[]> {
+        return this.extract7zWasm(file, password);
+    }
+
+    /**
+     * Internal: extract from 7z archive using 7z-wasm CLI.
+     */
+    private static async extract7zWasm(file: File, password: string, singleEntry?: string): Promise<ExtractedFile[]> {
+        const SevenZip = (await import('7z-wasm')).default;
+        const sevenZip = await SevenZip({ stdin: () => -1, print: () => {}, printErr: () => {} });
+
+        const archiveData = new Uint8Array(await file.arrayBuffer());
+        const archivePath = `/${file.name}`;
+        const outputDir = '/output';
+        sevenZip.FS.mkdir(outputDir);
+        sevenZip.FS.writeFile(archivePath, archiveData);
+
+        // Build extract command
+        const args = ['x', `-p${password}`, `-o${outputDir}`, '-y', archivePath];
+        if (singleEntry) args.push(singleEntry);
+        sevenZip.callMain(args);
+
+        // Read extracted files from MEMFS
+        const results: ExtractedFile[] = [];
+        const readDir = (dir: string, prefix: string) => {
+            const items = sevenZip.FS.readdir(dir).filter((n: string) => n !== '.' && n !== '..');
+            for (const item of items) {
+                const fullPath = `${dir}/${item}`;
+                const relativeName = prefix ? `${prefix}/${item}` : item;
+                const stat = sevenZip.FS.stat(fullPath);
+                if (sevenZip.FS.isDir(stat.mode)) {
+                    readDir(fullPath, relativeName);
+                } else {
+                    const data = sevenZip.FS.readFile(fullPath);
+                    results.push({ name: relativeName, data, size: data.length });
+                }
+            }
+        };
+        readDir(outputDir, '');
+
+        if (results.length === 0 && singleEntry) {
+            throw new Error(`Failed to extract: ${singleEntry}. Wrong password or file not found.`);
+        }
+        if (results.length === 0) {
+            throw new Error('Failed to extract archive. Wrong password or corrupted archive.');
+        }
+        return results;
+    }
+
+    private static libarchiveInitialized = false;
+
+    private static async getLibarchive() {
+        const mod = await import('libarchive.js');
+        const { Archive, ArchiveFormat, ArchiveCompression } = mod;
+        if (!this.libarchiveInitialized) {
+            Archive.init({ workerUrl: '/vendor/libarchive/worker-bundle.js' });
+            this.libarchiveInitialized = true;
+        }
+        return { Archive, ArchiveFormat, ArchiveCompression };
+    }
+
+    // ── Encryption detection ────────────────────────────────────────
 
     /**
      * Detect if a ZIP archive is encrypted by checking the general purpose bit flag.
