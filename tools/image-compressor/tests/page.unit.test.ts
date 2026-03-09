@@ -50,19 +50,34 @@ describe('Image Compressor Page', () => {
         expect(slider.value).toBe('80');
     });
 
-    it('should have format select with at least 6 format options', () => {
+    it('should have format select with 7 format options including AVIF', () => {
         const select = container.querySelector('#format-select') as HTMLSelectElement;
         expect(select).toBeTruthy();
         const options = select.querySelectorAll('option');
-        expect(options.length).toBeGreaterThanOrEqual(6);
+        expect(options.length).toBe(7);
         // Check key formats are present
         const values = Array.from(options).map(o => o.value);
         expect(values).toContain('image/jpeg');
         expect(values).toContain('image/webp');
         expect(values).toContain('image/png');
+        expect(values).toContain('image/avif');
         expect(values).toContain('image/gif');
         expect(values).toContain('image/bmp');
         expect(values).toContain('image/tiff');
+    });
+
+    it('should show JPEG / JPG label for JPEG format', () => {
+        const select = container.querySelector('#format-select') as HTMLSelectElement;
+        const jpegOption = Array.from(select.options).find(o => o.value === 'image/jpeg');
+        expect(jpegOption).toBeTruthy();
+        expect(jpegOption!.textContent).toContain('JPG');
+    });
+
+    it('should show AVIF as disabled in test environment', () => {
+        const select = container.querySelector('#format-select') as HTMLSelectElement;
+        const avifOption = Array.from(select.options).find(o => o.value === 'image/avif');
+        expect(avifOption).toBeTruthy();
+        expect(avifOption!.disabled).toBe(true);
     });
 
     it('should have max width and height inputs', () => {

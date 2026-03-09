@@ -4,6 +4,7 @@ const STATIC_ASSETS = [
     '/',
     '/index.html',
     '/index.js',
+    '/styles.css',
     '/manifest.json',
     '/favicon.svg'
 ];

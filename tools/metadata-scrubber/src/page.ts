@@ -28,9 +28,56 @@ export function renderMetadataScrubberPage(): HTMLElement {
       .drop-zone.has-file { border-color: var(--lu-success, #10b981); background: var(--lu-success-light, #ecfdf5); }
 
       .options-group { margin: 1.5rem 0; }
-      .options-group label { display: block; font-weight: 500; margin-bottom: 0.75rem; color: var(--lu-text-primary); }
-      .option-item { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
-      .option-item input[type="checkbox"] { accent-color: var(--lu-primary-500); }
+      .options-title { display: block; font-weight: 600; margin-bottom: 0.75rem; color: var(--lu-text-primary); font-size: 0.95rem; }
+      .option-item {
+        display: flex !important; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem; transition: background var(--lu-transition-fast, 150ms ease);
+        cursor: pointer; user-select: none; margin-bottom: 0.25rem;
+      }
+      .option-item:hover { background: var(--lu-bg-secondary, #fafafa); }
+      .option-item.disabled { opacity: 0.55; cursor: default; }
+      .option-item.disabled:hover { background: transparent; }
+
+      /* Custom toggle switch */
+      .toggle-switch {
+        position: relative; display: inline-block;
+        width: 36px; min-width: 36px; height: 20px; flex-shrink: 0;
+      }
+      .toggle-switch input {
+        opacity: 0; width: 0; height: 0; position: absolute; pointer-events: none;
+      }
+      .toggle-track {
+        display: block; width: 36px; height: 20px; border-radius: 999px;
+        background: var(--lu-gray-300, #d1d5db);
+        transition: background var(--lu-transition-fast, 150ms ease);
+        cursor: pointer; position: relative;
+      }
+      .toggle-track::after {
+        content: ''; position: absolute; left: 2px; top: 2px;
+        width: 16px; height: 16px; border-radius: 50%;
+        background: white;
+        box-shadow: 0 1px 3px rgb(0 0 0 / 0.15);
+        transition: transform var(--lu-transition-fast, 150ms ease);
+      }
+      .toggle-switch input:checked + .toggle-track {
+        background: var(--lu-primary-500, #613E9C);
+      }
+      .toggle-switch input:checked + .toggle-track::after {
+        transform: translateX(16px);
+      }
+      .toggle-switch input:focus-visible + .toggle-track {
+        outline: 2px solid var(--lu-primary-500); outline-offset: 2px;
+      }
+      .toggle-switch input:disabled + .toggle-track {
+        cursor: default;
+      }
+      .option-label {
+        font-size: 0.9rem; color: var(--lu-text-primary);
+        line-height: 1.3;
+      }
+      .option-label-hint {
+        font-size: 0.78rem; color: var(--lu-text-muted, #757575);
+      }
 
       .btn { padding: 0.75rem 1.5rem; background: var(--lu-primary-500); color: white; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
       .btn:hover { background: var(--lu-primary-600); }
@@ -64,6 +111,8 @@ export function renderMetadataScrubberPage(): HTMLElement {
       <h1 class="title">${ICONS.shield} Metadata Scrubber</h1>
       <p class="subtitle">Remove hidden metadata from files to protect your privacy</p>
       <div style="font-size: 0.8rem; color: var(--lu-text-muted); margin-top: 0.5rem;">
+        Powered by <a href="https://github.com/Hopding/pdf-lib" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">pdf-lib</a> &amp; <a href="https://github.com/ffmpegwasm/ffmpeg.wasm" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">FFmpeg.wasm</a>.
+        <br>
         100% Local Execution. Your files never leave your browser.
       </div>
     </header>
@@ -77,27 +126,42 @@ export function renderMetadataScrubberPage(): HTMLElement {
       </div>
 
       <div class="options-group" id="options-group" style="display:none;">
-        <label>Scrubbing Options</label>
-        <div class="option-item">
-          <input type="checkbox" id="opt-all" checked>
-          <span>Remove all metadata</span>
-        </div>
-        <div class="option-item">
-          <input type="checkbox" id="opt-exif" checked disabled>
-          <span>Remove EXIF data (camera info, settings)</span>
-        </div>
-        <div class="option-item">
-          <input type="checkbox" id="opt-gps" checked disabled>
-          <span>Remove GPS location data</span>
-        </div>
-        <div class="option-item">
-          <input type="checkbox" id="opt-xmp" checked disabled>
-          <span>Remove XMP data (editing software info)</span>
-        </div>
-        <div class="option-item">
-          <input type="checkbox" id="opt-iptc" checked disabled>
-          <span>Remove IPTC data (copyright, captions)</span>
-        </div>
+        <span class="options-title">Scrubbing Options</span>
+        <label class="option-item" for="opt-all">
+          <span class="toggle-switch">
+            <input type="checkbox" id="opt-all" checked>
+            <span class="toggle-track"></span>
+          </span>
+          <span class="option-label">Remove all metadata</span>
+        </label>
+        <label class="option-item disabled" for="opt-exif">
+          <span class="toggle-switch">
+            <input type="checkbox" id="opt-exif" checked disabled>
+            <span class="toggle-track"></span>
+          </span>
+          <span><span class="option-label">EXIF data</span> <span class="option-label-hint">Camera info, settings</span></span>
+        </label>
+        <label class="option-item disabled" for="opt-gps">
+          <span class="toggle-switch">
+            <input type="checkbox" id="opt-gps" checked disabled>
+            <span class="toggle-track"></span>
+          </span>
+          <span><span class="option-label">GPS location</span> <span class="option-label-hint">Coordinates, altitude</span></span>
+        </label>
+        <label class="option-item disabled" for="opt-xmp">
+          <span class="toggle-switch">
+            <input type="checkbox" id="opt-xmp" checked disabled>
+            <span class="toggle-track"></span>
+          </span>
+          <span><span class="option-label">XMP data</span> <span class="option-label-hint">Editing software info</span></span>
+        </label>
+        <label class="option-item disabled" for="opt-iptc">
+          <span class="toggle-switch">
+            <input type="checkbox" id="opt-iptc" checked disabled>
+            <span class="toggle-track"></span>
+          </span>
+          <span><span class="option-label">IPTC data</span> <span class="option-label-hint">Copyright, captions</span></span>
+        </label>
       </div>
 
       <div class="metadata-display" id="metadata-display">
@@ -156,6 +220,8 @@ function setupEventListeners(container: HTMLElement) {
         [optExif, optGps, optXmp, optIptc].forEach((opt) => {
             opt.checked = checked;
             opt.disabled = checked;
+            const item = opt.closest('.option-item');
+            if (item) item.classList.toggle('disabled', checked);
         });
     });
 

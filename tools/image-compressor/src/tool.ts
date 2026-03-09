@@ -35,6 +35,7 @@ export interface CompressionResult {
     originalHeight: number;
     blob: Blob;
     dataUrl: string;
+    preservedOriginal: boolean;
 }
 
 /** Formats that use custom encoders instead of canvas.toBlob() */
@@ -126,6 +127,26 @@ export class ImageCompressor {
             dataUrl = canvas.toDataURL(options.outputFormat, effectiveQuality);
         }
 
+        // If same format, same dimensions, no crop, and output is larger — preserve original
+        const isSameFormat = options.outputFormat === file.type;
+        const isSameDimensions = width === img.naturalWidth && height === img.naturalHeight;
+        const noCrop = !options.crop;
+        if (isSameFormat && isSameDimensions && noCrop && blob.size >= file.size) {
+            const originalDataUrl = await this.blobToDataUrl(file);
+            return {
+                originalSize: file.size,
+                compressedSize: file.size,
+                compressionRatio: 1.0,
+                width,
+                height,
+                originalWidth: img.naturalWidth,
+                originalHeight: img.naturalHeight,
+                blob: file,
+                dataUrl: originalDataUrl,
+                preservedOriginal: true,
+            };
+        }
+
         return {
             originalSize: file.size,
             compressedSize: blob.size,
@@ -136,6 +157,7 @@ export class ImageCompressor {
             originalHeight: img.naturalHeight,
             blob,
             dataUrl,
+            preservedOriginal: false,
         };
     }
 
@@ -177,19 +199,25 @@ export class ImageCompressor {
     }
 
     /**
-     * Returns all supported output formats.
-     * Native canvas formats are always listed; AVIF is feature-detected.
+     * Returns all output formats (always includes AVIF).
+     * Use isFormatSupported() to check browser support.
      */
     static getSupportedFormats(): OutputFormat[] {
-        const formats: OutputFormat[] = [
-            'image/jpeg', 'image/webp', 'image/png',
+        return [
+            'image/jpeg', 'image/webp', 'image/png', 'image/avif',
             'image/gif', 'image/bmp', 'image/tiff',
         ];
-        // AVIF: only include if the browser's canvas supports it
-        if (typeof document !== 'undefined' && canvasSupportsFormat('image/avif')) {
-            formats.splice(3, 0, 'image/avif'); // insert after PNG
+    }
+
+    /**
+     * Check if a format is supported by the browser's canvas.
+     * Returns true for all formats except AVIF, which is feature-detected.
+     */
+    static isFormatSupported(format: OutputFormat): boolean {
+        if (format === 'image/avif') {
+            return typeof document !== 'undefined' && canvasSupportsFormat('image/avif');
         }
-        return formats;
+        return true;
     }
 
     static formatFileSize(bytes: number): string {

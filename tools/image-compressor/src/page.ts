@@ -18,7 +18,7 @@ export function secureCleanup(): void {
 }
 
 const FORMAT_LABELS: Record<string, string> = {
-    'image/jpeg': 'JPEG',
+    'image/jpeg': 'JPEG / JPG',
     'image/webp': 'WebP',
     'image/png':  'PNG',
     'image/avif': 'AVIF',
@@ -34,7 +34,11 @@ export function renderImageCompressorPage(): HTMLElement {
     // Build format options dynamically
     const formats = ImageCompressor.getSupportedFormats();
     const formatOptions = formats
-        .map(f => `<option value="${f}">${FORMAT_LABELS[f] || f}</option>`)
+        .map(f => {
+            const supported = ImageCompressor.isFormatSupported(f);
+            const label = supported ? (FORMAT_LABELS[f] || f) : `${FORMAT_LABELS[f] || f} (not supported)`;
+            return `<option value="${f}"${supported ? '' : ' disabled'}>${label}</option>`;
+        })
         .join('\n              ');
 
     container.innerHTML = `
@@ -430,19 +434,25 @@ function setupEventListeners(container: HTMLElement) {
             const savedPercent = Math.round((1 - result.compressionRatio) * 100);
             const savedBytes = result.originalSize - result.compressedSize;
 
-            if (savedBytes > 0) {
+            if (result.preservedOriginal) {
+                savingsText.textContent = 'Already optimally compressed — original file preserved';
+                savingsText.classList.remove('size-increased');
+                savingsFill.style.width = '100%';
+                savingsFill.style.background = 'var(--lu-primary-500, #613E9C)';
+                savingsDetail.textContent = `${ImageCompressor.formatFileSize(result.originalSize)} (no change)`;
+            } else if (savedBytes > 0) {
                 savingsText.textContent = `Saved: ${savedPercent}% (${ImageCompressor.formatFileSize(savedBytes)} reduction)`;
                 savingsText.classList.remove('size-increased');
                 savingsFill.style.width = `${savedPercent}%`;
                 savingsFill.style.background = 'var(--lu-success, #10b981)';
+                savingsDetail.textContent = `${ImageCompressor.formatFileSize(result.originalSize)} \u2192 ${ImageCompressor.formatFileSize(result.compressedSize)}`;
             } else {
                 savingsText.textContent = `Size increased by ${ImageCompressor.formatFileSize(Math.abs(savedBytes))}`;
                 savingsText.classList.add('size-increased');
                 savingsFill.style.width = '100%';
                 savingsFill.style.background = 'var(--lu-error, #ef4444)';
+                savingsDetail.textContent = `${ImageCompressor.formatFileSize(result.originalSize)} \u2192 ${ImageCompressor.formatFileSize(result.compressedSize)}`;
             }
-
-            savingsDetail.textContent = `${ImageCompressor.formatFileSize(result.originalSize)} \u2192 ${ImageCompressor.formatFileSize(result.compressedSize)}`;
 
             previewSection.classList.add('visible');
         } catch (err: unknown) {
