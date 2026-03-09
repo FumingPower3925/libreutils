@@ -17,6 +17,7 @@ export { LuDownloadButton } from './components/DownloadButton';
 // Utilities
 export { registerComponents } from './utils/register';
 export { createRouter, type Route } from './utils/router';
+export { WorkerOrchestrator, type WorkerProgress, type WorkerMessage } from './utils/worker-orchestrator';
 
 // Types
 export type { ToolMeta } from './types';
