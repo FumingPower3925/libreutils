@@ -36,6 +36,30 @@ const tools: ToolMeta[] = [
     icon: 'hash',
     keywords: ['hash', 'checksum', 'md5', 'sha', 'blake3', 'verify', 'integrity'],
   },
+  {
+    id: 'metadata-scrubber',
+    name: 'Metadata Scrubber',
+    description: 'Remove sensitive metadata from files (PDFs, images, videos, audio) before sharing. Supports EXIF, GPS, XMP, IPTC removal.',
+    category: 'privacy',
+    icon: 'clean',
+    keywords: ['metadata', 'privacy', 'exif', 'gps', 'pdf', 'image', 'video', 'audio', 'scrub', 'remove'],
+  },
+  {
+    id: 'archive-manager',
+    name: 'Archive Manager',
+    description: 'View and extract ZIP, TAR, and GZ archive files entirely in your browser.',
+    category: 'file',
+    icon: 'archive',
+    keywords: ['archive', 'zip', 'tar', 'gz', 'extract', 'compress'],
+  },
+  {
+    id: 'image-compressor',
+    name: 'Image Compressor',
+    description: 'Compress and resize images with quality control and side-by-side preview. Supports JPEG, PNG, and WebP.',
+    category: 'image',
+    icon: 'image',
+    keywords: ['image', 'compress', 'resize', 'jpeg', 'png', 'webp', 'optimize'],
+  },
 ];
 
 const categories = [
@@ -46,6 +70,7 @@ const categories = [
   { id: 'image', name: 'Image' },
   { id: 'file', name: 'File' },
   { id: 'conversion', name: 'Conversion' },
+  { id: 'privacy', name: 'Privacy' },
 ];
 
 export function renderHomePage(): HTMLElement {

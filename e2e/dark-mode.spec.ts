@@ -53,7 +53,7 @@ test.describe('Dark Mode', () => {
     });
     const page = await context.newPage();
 
-    await page.goto('http://localhost:5173/');
+    await page.goto('/');
 
     // Should automatically apply dark mode
     const html = page.locator('html');

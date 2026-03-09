@@ -217,6 +217,9 @@ export function renderAboutPage(): HTMLElement {
         <a href="#/" class="cta-btn cta-btn-secondary">
           Browse Tools
         </a>
+        <a href="#/legal" class="cta-btn cta-btn-secondary">
+          Legal Information
+        </a>
       </div>
     </section>
   `;

@@ -1,0 +1,10 @@
+{
+    "name": "@libreutils/tool-metadata-scrubber",
+    "version": "1.0.0",
+    "type": "module",
+    "main": "src/index.ts",
+    "dependencies": {
+        "@libreutils/shared": "file:../../shared",
+        "pdf-lib": "1.17.1"
+    }
+}
