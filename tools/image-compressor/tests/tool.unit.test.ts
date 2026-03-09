@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { ImageCompressor, type CompressionOptions } from "../src/tool";
+import { ImageCompressor, type CompressionOptions, type CompressionResult } from "../src/tool";
 import { encodeBMP, encodeTIFF, encodeGIF } from "../src/encoders";
 
 describe('ImageCompressor', () => {
@@ -90,18 +90,37 @@ describe('ImageCompressor', () => {
     });
 
     describe('getSupportedFormats', () => {
-        it('should return at least JPEG, WebP, PNG, GIF, BMP, TIFF', () => {
+        it('should return all 7 formats including AVIF', () => {
             const formats = ImageCompressor.getSupportedFormats();
             expect(formats).toContain('image/jpeg');
             expect(formats).toContain('image/webp');
             expect(formats).toContain('image/png');
+            expect(formats).toContain('image/avif');
             expect(formats).toContain('image/gif');
             expect(formats).toContain('image/bmp');
             expect(formats).toContain('image/tiff');
         });
 
-        it('should return at least 6 formats', () => {
-            expect(ImageCompressor.getSupportedFormats().length).toBeGreaterThanOrEqual(6);
+        it('should return exactly 7 formats', () => {
+            expect(ImageCompressor.getSupportedFormats().length).toBe(7);
+        });
+    });
+
+    describe('isFormatSupported', () => {
+        it('should return true for JPEG', () => {
+            expect(ImageCompressor.isFormatSupported('image/jpeg')).toBe(true);
+        });
+
+        it('should return true for PNG', () => {
+            expect(ImageCompressor.isFormatSupported('image/png')).toBe(true);
+        });
+
+        it('should return true for WebP', () => {
+            expect(ImageCompressor.isFormatSupported('image/webp')).toBe(true);
+        });
+
+        it('should return false for AVIF in test env (no canvas)', () => {
+            expect(ImageCompressor.isFormatSupported('image/avif')).toBe(false);
         });
     });
 
@@ -121,6 +140,22 @@ describe('ImageCompressor', () => {
                 outputFormat: 'image/jpeg',
             };
             expect(options.lossless).toBeUndefined();
+        });
+
+        it('should include preservedOriginal in result type', () => {
+            const result: CompressionResult = {
+                originalSize: 100,
+                compressedSize: 80,
+                compressionRatio: 0.8,
+                width: 100,
+                height: 100,
+                originalWidth: 100,
+                originalHeight: 100,
+                blob: new Blob([]),
+                dataUrl: '',
+                preservedOriginal: false,
+            };
+            expect(result.preservedOriginal).toBe(false);
         });
 
         it('should accept crop option', () => {

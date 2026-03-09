@@ -438,6 +438,21 @@ describe('ArchiveManager.createArchive TAR.GZ', () => {
         expect(data[1]).toBe(0x8b);
     });
 
+    it('should respect compression level for TAR.GZ', async () => {
+        const enc = new TextEncoder();
+        const blobStored = await ArchiveManager.createArchive(
+            [{ name: 'data.txt', data: enc.encode('Hello World') }],
+            { format: 'tar.gz', compressionLevel: 0 },
+        );
+        const blobCompressed = await ArchiveManager.createArchive(
+            [{ name: 'data.txt', data: enc.encode('Hello World') }],
+            { format: 'tar.gz', compressionLevel: 6 },
+        );
+
+        // Level 0 (no compression) should produce larger output than level 6
+        expect(blobStored.size).toBeGreaterThanOrEqual(blobCompressed.size);
+    });
+
     it('should create a TAR.GZ that round-trips correctly', async () => {
         const enc = new TextEncoder();
         const dec = new TextDecoder();
@@ -491,6 +506,26 @@ describe('ArchiveManager.createArchive edge cases', () => {
             ArchiveManager.createArchive([], { format: 'rar' as any })
         ).rejects.toThrow('Unsupported creation format');
     });
+
+    it('should throw for password with TAR-based format', async () => {
+        const enc = new TextEncoder();
+        const files: InputFile[] = [
+            { name: 'test.txt', data: enc.encode('test') },
+        ];
+        await expect(
+            ArchiveManager.createArchive(files, { format: 'tar', password: 'secret' })
+        ).rejects.toThrow('does not support password protection');
+    });
+
+    it('should throw for password with tar.gz format', async () => {
+        const enc = new TextEncoder();
+        const files: InputFile[] = [
+            { name: 'test.txt', data: enc.encode('test') },
+        ];
+        await expect(
+            ArchiveManager.createArchive(files, { format: 'tar.gz', password: 'secret' })
+        ).rejects.toThrow('does not support password protection');
+    });
 });
 
 describe('ArchiveManager.isZipEncrypted', () => {
@@ -514,3 +549,4 @@ describe('ArchiveManager.isZipEncrypted', () => {
         expect(ArchiveManager.isZipEncrypted(data)).toBe(false);
     });
 });
+

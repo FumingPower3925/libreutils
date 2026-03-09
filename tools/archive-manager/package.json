@@ -11,10 +11,13 @@
   },
   "scripts": {
     "dev": "bun run ./src/dev.ts",
-    "build": "bun build ./src/index.ts --outdir ./dist --target browser --minify"
+    "build": "bun build ./src/index.ts --outdir ./dist --target browser --minify --external 7z-wasm"
   },
   "dependencies": {
+    "7z-wasm": "1.2.0",
     "@libreutils/shared": "file:../../shared",
-    "fflate": "^0.8.2"
+    "@zip.js/zip.js": "2.8.23",
+    "fflate": "^0.8.2",
+    "libarchive.js": "^2.0.2"
   }
 }

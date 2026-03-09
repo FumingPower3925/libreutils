@@ -17,10 +17,34 @@
 
     <title>LibreUtils - Privacy-First Web Tools</title>
 
+    <!-- Preconnect to Google Fonts (non-blocking) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="./styles.css">
 
+    <!-- Inline critical styles to avoid FOUC and render-blocking CSS -->
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; color: #212121; background: #ffffff; min-height: 100vh; }
+        @media (prefers-color-scheme: dark) { body { color: #fafafa; background: #121212; } }
+        #app { min-height: 100vh; }
+    </style>
+
+    <!-- Load fonts with display=optional to prevent CLS from font swap -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=optional" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=optional"></noscript>
+
+    <!-- App styles (non-blocking via media trick) -->
+    <link rel="stylesheet" href="./styles.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="./styles.css"></noscript>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "7z-wasm": "/vendor/7z-wasm/7zz.es6.js"
+        }
+    }
+    </script>
     <script type="module" src="./index.js"></script>
 </head>
 

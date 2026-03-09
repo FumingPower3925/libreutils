@@ -9,6 +9,8 @@ const ICONS = {
     folder: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>`,
     download: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
     remove: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`,
+    eyeOpen: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+    eyeClosed: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`,
 };
 
 function formatSize(bytes: number): string {
@@ -78,24 +80,75 @@ export function renderArchiveManagerPage(): HTMLElement {
       .status-msg { text-align: center; padding: 1rem; color: var(--lu-text-secondary, #6b7280); font-size: 0.9rem; }
       .status-msg.error { color: var(--lu-error, #ef4444); }
 
-      .upload-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; align-items: center; flex-wrap: wrap; }
-
       .compress-controls { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
       .control-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
       .control-row label { font-size: 0.85rem; font-weight: 600; color: var(--lu-text-primary, #111827); min-width: 5rem; }
-      .control-row select, .control-row input[type="range"] { font-size: 0.85rem; padding: 0.375rem 0.5rem; border: 1px solid var(--lu-border, #e5e7eb); border-radius: 0.375rem; background: var(--lu-bg-card, white); color: var(--lu-text-primary, #111827); color-scheme: light dark; }
-      .control-row select { min-width: 6rem; }
+      .control-row select { font-size: 0.85rem; padding: 0.375rem 0.5rem; border: 1px solid var(--lu-border, #e5e7eb); border-radius: 0.375rem; background: var(--lu-bg-card, white); color: var(--lu-text-primary, #111827); color-scheme: light dark; min-width: 6rem; }
       .control-row select option { background: var(--lu-bg-card, white); color: var(--lu-text-primary, #111827); }
-      .level-display { font-size: 0.85rem; color: var(--lu-text-secondary, #6b7280); min-width: 1.5rem; }
+      .control-row select option:disabled { color: var(--lu-text-muted, #9ca3af); font-style: italic; }
+      .format-hint { font-size: 0.75rem; color: var(--lu-text-muted, #9ca3af); margin-top: 0.125rem; display: none; }
+
+      /* Custom range slider */
+      .slider-wrap { display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 0; }
+      .slider-wrap input[type="range"] {
+        -webkit-appearance: none; appearance: none; flex: 1; height: 6px;
+        background: var(--lu-border-strong, #e0e0e0); border-radius: 3px; outline: none;
+        cursor: pointer;
+      }
+      .slider-wrap input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+        background: var(--lu-primary-500, #613E9C); border: 2px solid var(--lu-bg-card, white);
+        box-shadow: 0 1px 4px rgb(0 0 0 / 0.25); cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      .slider-wrap input[type="range"]::-webkit-slider-thumb:hover {
+        transform: scale(1.15); box-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
+      }
+      .slider-wrap input[type="range"]::-moz-range-thumb {
+        width: 18px; height: 18px; border-radius: 50%;
+        background: var(--lu-primary-500, #613E9C); border: 2px solid var(--lu-bg-card, white);
+        box-shadow: 0 1px 4px rgb(0 0 0 / 0.25); cursor: pointer;
+      }
+      .slider-wrap input[type="range"]::-moz-range-track {
+        height: 6px; background: var(--lu-border-strong, #e0e0e0); border-radius: 3px; border: none;
+      }
+      .level-badge {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 1.75rem; height: 1.75rem; border-radius: 0.375rem;
+        background: var(--lu-bg-secondary, #fafafa); color: var(--lu-text-primary, #212121);
+        font-size: 0.8rem; font-weight: 700;
+        border: 1px solid var(--lu-border, #eeeeee);
+      }
+
+      /* Password input with eye toggle */
+      .password-wrap {
+        display: flex; align-items: center; flex: 1; position: relative;
+      }
+      .password-wrap input {
+        font-size: 0.85rem; padding: 0.375rem 2rem 0.375rem 0.5rem;
+        border: 1px solid var(--lu-border, #e5e7eb); border-radius: 0.375rem;
+        background: var(--lu-bg-card, white); color: var(--lu-text-primary, #111827);
+        width: 100%; color-scheme: light dark;
+      }
+      .password-wrap input:focus { border-color: var(--lu-primary-400, #9a7bc0); outline: none; box-shadow: 0 0 0 2px rgba(97, 62, 156, 0.15); }
+      .eye-toggle {
+        position: absolute; right: 0.375rem; top: 50%; transform: translateY(-50%);
+        background: none; border: none; cursor: pointer; padding: 0.125rem;
+        color: var(--lu-text-muted, #9ca3af); display: flex; align-items: center;
+        transition: color 0.15s;
+      }
+      .eye-toggle:hover { color: var(--lu-primary-500, #613E9C); }
 
       .encrypted-notice { background: var(--lu-warning-light, #fffbeb); border: 1px solid var(--lu-warning, #f59e0b); border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--lu-warning-dark, #92400e); margin-top: 0.75rem; }
     </style>
 
     <header class="header">
       <h1 class="title">${ICONS.archive} Archive Manager</h1>
-      <p class="subtitle">Create and extract ZIP, TAR, and GZ archives in your browser</p>
-      <div style="font-size: 0.8rem; color: var(--lu-text-muted, #9ca3af); margin-top: 0.5rem;">
-        100% Local Execution (Zero External Dependencies).
+      <p class="subtitle">Create and extract ZIP, TAR, GZ, BZ2, XZ, 7Z, and RAR archives in your browser</p>
+      <div style="font-size: 0.8rem; color: var(--lu-text-muted); margin-top: 0.5rem;">
+        Powered by <a href="https://github.com/101arrowz/fflate" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">fflate</a>, <a href="https://gildas-lormeau.github.io/zip.js/" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">zip.js</a>, <a href="https://github.com/nicka-begiashvili/libarchivejs" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">libarchive.js</a> &amp; <a href="https://github.com/nicka-begiashvili/7z-wasm" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">7z-wasm</a>.
+        <br>
+        100% Local Execution.
       </div>
     </header>
 
@@ -105,14 +158,6 @@ export function renderArchiveManagerPage(): HTMLElement {
         <div id="archive-file-label">Drop files here or click to browse</div>
         <div style="font-size: 0.8rem; color: var(--lu-text-muted, #9ca3af); margin-top: 0.5rem;">Drop an archive to extract, or regular files to create an archive</div>
         <input type="file" id="archive-file-input" multiple hidden>
-      </div>
-
-      <div class="upload-actions" id="upload-actions" style="display:none;">
-        <button class="btn btn-sm btn-secondary" id="add-more-btn">${ICONS.upload} Add More Files</button>
-        <button class="btn btn-sm btn-secondary" id="folder-upload-btn">${ICONS.folder} Upload Folder</button>
-        <input type="file" id="add-more-input" multiple hidden>
-        <input type="file" id="folder-input" webkitdirectory hidden>
-        <button class="btn btn-sm btn-secondary" id="clear-files-btn">${ICONS.remove} Clear All</button>
       </div>
 
       <div class="progress-bar" id="archive-progress">
@@ -132,20 +177,36 @@ export function renderArchiveManagerPage(): HTMLElement {
         <div class="entry-list" id="compress-file-list"></div>
 
         <div class="compress-controls">
-          <div class="control-row">
+          <div class="control-row" style="flex-wrap: wrap;">
             <label for="archive-format">Format</label>
             <select id="archive-format">
               <option value="zip">ZIP</option>
               <option value="tar">TAR</option>
               <option value="tar.gz">TAR.GZ</option>
+              <option value="tar.bz2">TAR.BZ2</option>
+              <option value="tar.xz">TAR.XZ</option>
+              <option value="7z">7Z</option>
+              <option value="rar" disabled>RAR (read-only)</option>
             </select>
+            <div class="format-hint" id="format-hint">RAR is a proprietary format — creation requires a commercial license. Extraction is supported.</div>
           </div>
 
-          <div class="control-row" id="zip-options">
-            <label for="compression-level">Compression</label>
-            <input type="range" id="compression-level" min="0" max="9" value="6">
-            <span class="level-display" id="level-value">6</span>
+          <div class="control-row" id="compression-options">
+            <label for="compression-level">Level</label>
+            <div class="slider-wrap">
+              <input type="range" id="compression-level" min="0" max="9" value="6">
+              <span class="level-badge" id="level-value">6</span>
+            </div>
           </div>
+
+          <div class="control-row" id="password-row">
+            <label for="archive-password">Password</label>
+            <div class="password-wrap">
+              <input type="password" id="archive-password" placeholder="Optional — encrypt archive (AES-256)" autocomplete="off">
+              <button type="button" class="eye-toggle" id="password-eye" title="Show password">${ICONS.eyeClosed}</button>
+            </div>
+          </div>
+          <div class="format-hint" id="password-hint" style="display:none;"></div>
 
           <button class="btn btn-full" id="create-btn">${ICONS.archive} Create Archive</button>
         </div>
@@ -154,7 +215,14 @@ export function renderArchiveManagerPage(): HTMLElement {
       <!-- Decompress Mode -->
       <div id="decompress-mode" style="display:none;">
         <div id="encrypted-notice" class="encrypted-notice" style="display:none;">
-          This archive appears to be password-protected. Password-protected archives are not yet supported.
+          This archive is password-protected. Enter the password to extract files.
+          <div class="control-row" style="margin-top: 0.5rem;">
+            <div class="password-wrap">
+              <input type="password" id="decrypt-password" placeholder="Enter password" autocomplete="off">
+              <button type="button" class="eye-toggle" id="decrypt-password-eye" title="Show password">${ICONS.eyeClosed}</button>
+            </div>
+            <button class="btn btn-sm" id="btn-unlock" style="display:none;">Unlock</button>
+          </div>
         </div>
         <div class="result-area visible" id="archive-results">
           <div class="result-header">
@@ -181,22 +249,20 @@ function setupEventListeners(container: HTMLElement) {
     const progressBar = container.querySelector('#archive-progress') as HTMLElement;
     const progressFill = container.querySelector('#archive-progress-fill') as HTMLElement;
     const statusMsg = container.querySelector('#archive-status') as HTMLElement;
-    const uploadActions = container.querySelector('#upload-actions') as HTMLElement;
-    const addMoreBtn = container.querySelector('#add-more-btn') as HTMLButtonElement;
-    const addMoreInput = container.querySelector('#add-more-input') as HTMLInputElement;
-    const folderUploadBtn = container.querySelector('#folder-upload-btn') as HTMLButtonElement;
-    const folderInput = container.querySelector('#folder-input') as HTMLInputElement;
-    const clearFilesBtn = container.querySelector('#clear-files-btn') as HTMLButtonElement;
 
     // Compress mode elements
     const compressMode = container.querySelector('#compress-mode') as HTMLElement;
     const compressFileList = container.querySelector('#compress-file-list') as HTMLElement;
     const compressSummary = container.querySelector('#compress-summary') as HTMLElement;
     const formatSelect = container.querySelector('#archive-format') as HTMLSelectElement;
-    const zipOptions = container.querySelector('#zip-options') as HTMLElement;
+    const compressionOptions = container.querySelector('#compression-options') as HTMLElement;
     const compressionLevel = container.querySelector('#compression-level') as HTMLInputElement;
     const levelValue = container.querySelector('#level-value') as HTMLElement;
     const createBtn = container.querySelector('#create-btn') as HTMLButtonElement;
+    const passwordInput = container.querySelector('#archive-password') as HTMLInputElement;
+    const passwordEye = container.querySelector('#password-eye') as HTMLButtonElement;
+    const passwordHint = container.querySelector('#password-hint') as HTMLElement;
+    const formatHint = container.querySelector('#format-hint') as HTMLElement;
 
     // Decompress mode elements
     const decompressMode = container.querySelector('#decompress-mode') as HTMLElement;
@@ -205,6 +271,10 @@ function setupEventListeners(container: HTMLElement) {
     const resultSummary = container.querySelector('#archive-result-summary') as HTMLElement;
     const extractAllBtn = container.querySelector('#btn-extract-all') as HTMLButtonElement;
     const encryptedNotice = container.querySelector('#encrypted-notice') as HTMLElement;
+    const decryptPasswordInput = container.querySelector('#decrypt-password') as HTMLInputElement;
+    const decryptPasswordEye = container.querySelector('#decrypt-password-eye') as HTMLButtonElement;
+    const unlockBtn = container.querySelector('#btn-unlock') as HTMLButtonElement;
+    const passwordRow = container.querySelector('#password-row') as HTMLElement;
 
     let currentArchiveFile: File | null = null;
     let currentEntries: ArchiveEntry[] = [];
@@ -220,12 +290,93 @@ function setupEventListeners(container: HTMLElement) {
 
     // Format selector updates
     formatSelect.addEventListener('change', () => {
-        const isZip = formatSelect.value === 'zip';
-        zipOptions.style.display = isZip ? 'flex' : 'none';
+        const fmt = formatSelect.value;
+        const hasCompression = fmt !== 'tar';
+        compressionOptions.style.display = hasCompression ? 'flex' : 'none';
+        formatHint.style.display = 'none';
+
+        // Show/hide password row based on format encryption support
+        const supportsEncryption = fmt === 'zip' || fmt === '7z';
+        passwordRow.style.display = supportsEncryption ? 'flex' : 'none';
+
+        if (!supportsEncryption) {
+            passwordInput.value = '';
+            passwordHint.textContent = 'TAR formats don\'t support encryption. Use ZIP or 7z for password protection.';
+            passwordHint.style.display = 'block';
+        } else if (fmt === 'zip') {
+            passwordHint.textContent = 'AES-256 encryption — compatible with all tools.';
+            passwordHint.style.display = passwordInput.value.trim() ? 'block' : 'none';
+        } else if (fmt === '7z') {
+            passwordHint.textContent = 'AES-256 encryption with encrypted headers.';
+            passwordHint.style.display = passwordInput.value.trim() ? 'block' : 'none';
+        }
+    });
+
+    // Show RAR hint when dropdown is opened (user will see the disabled option)
+    formatSelect.addEventListener('mousedown', () => {
+        formatHint.style.display = 'block';
+    });
+    formatSelect.addEventListener('blur', () => {
+        formatHint.style.display = 'none';
     });
 
     compressionLevel.addEventListener('input', () => {
         levelValue.textContent = compressionLevel.value;
+    });
+
+    // Show encryption method hint when password is entered
+    passwordInput.addEventListener('input', () => {
+        const fmt = formatSelect.value;
+        if (passwordInput.value.trim()) {
+            passwordHint.textContent = fmt === '7z'
+                ? 'AES-256 encryption with encrypted headers.'
+                : 'AES-256 encryption — compatible with all tools.';
+            passwordHint.style.display = 'block';
+        } else {
+            passwordHint.style.display = 'none';
+        }
+    });
+
+    // Password eye toggles
+    passwordEye.addEventListener('click', () => {
+        const isHidden = passwordInput.type === 'password';
+        passwordInput.type = isHidden ? 'text' : 'password';
+        passwordEye.innerHTML = isHidden ? ICONS.eyeOpen : ICONS.eyeClosed;
+        passwordEye.title = isHidden ? 'Hide password' : 'Show password';
+    });
+    decryptPasswordEye.addEventListener('click', () => {
+        const isHidden = decryptPasswordInput.type === 'password';
+        decryptPasswordInput.type = isHidden ? 'text' : 'password';
+        decryptPasswordEye.innerHTML = isHidden ? ICONS.eyeOpen : ICONS.eyeClosed;
+        decryptPasswordEye.title = isHidden ? 'Hide password' : 'Show password';
+    });
+
+    // Unlock button — re-lists 7z entries with the provided password
+    unlockBtn.addEventListener('click', async () => {
+        if (!currentArchiveFile) return;
+        const password = decryptPasswordInput.value.trim();
+        if (!password) {
+            showStatus('Please enter the password.', true);
+            return;
+        }
+        unlockBtn.disabled = true;
+        unlockBtn.textContent = 'Unlocking...';
+        try {
+            progressBar.style.display = 'block';
+            progressFill.style.width = '50%';
+            currentEntries = await ArchiveManager.listEntriesVia7zWasm(currentArchiveFile, password);
+            progressFill.style.width = '100%';
+            renderDecompressEntries();
+            hideStatus();
+            setTimeout(() => { progressBar.style.display = 'none'; }, 300);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : String(err);
+            showStatus(`Failed to unlock: ${message}`, true);
+            progressBar.style.display = 'none';
+        } finally {
+            unlockBtn.disabled = false;
+            unlockBtn.textContent = 'Unlock';
+        }
     });
 
     // Drop zone events
@@ -248,29 +399,6 @@ function setupEventListeners(container: HTMLElement) {
         }
     });
 
-    // Add more files
-    addMoreBtn.addEventListener('click', () => addMoreInput.click());
-    addMoreInput.addEventListener('change', () => {
-        if (addMoreInput.files?.length) {
-            addFilesToCompress(Array.from(addMoreInput.files));
-        }
-        addMoreInput.value = '';
-    });
-
-    // Folder upload
-    folderUploadBtn.addEventListener('click', () => folderInput.click());
-    folderInput.addEventListener('change', () => {
-        if (folderInput.files?.length) {
-            addFilesToCompress(Array.from(folderInput.files));
-        }
-        folderInput.value = '';
-    });
-
-    // Clear all
-    clearFilesBtn.addEventListener('click', () => {
-        resetToInitial();
-    });
-
     function showStatus(msg: string, isError = false) {
         statusMsg.textContent = msg;
         statusMsg.className = isError ? 'status-msg error' : 'status-msg';
@@ -290,7 +418,6 @@ function setupEventListeners(container: HTMLElement) {
         dropZone.classList.remove('has-file');
         compressMode.style.display = 'none';
         decompressMode.style.display = 'none';
-        uploadActions.style.display = 'none';
         encryptedNotice.style.display = 'none';
         progressBar.style.display = 'none';
         hideStatus();
@@ -323,6 +450,9 @@ function setupEventListeners(container: HTMLElement) {
         if (isArchive && files.length === 1) {
             // Decompress mode
             enterDecompressMode(firstFile);
+        } else if (currentMode === 'compress') {
+            // Already in compress mode — add files
+            addFilesToCompress(files);
         } else {
             // Compress mode
             enterCompressMode(files);
@@ -338,17 +468,19 @@ function setupEventListeners(container: HTMLElement) {
         dropZone.classList.add('has-file');
         compressMode.style.display = 'none';
         decompressMode.style.display = 'block';
-        uploadActions.style.display = 'none';
         encryptedNotice.style.display = 'none';
+        unlockBtn.style.display = 'none';
+        decryptPasswordInput.value = '';
 
         // Show progress
         progressBar.style.display = 'block';
         progressFill.style.width = '30%';
 
         try {
-            // Check if it's an encrypted ZIP
             const data = new Uint8Array(await file.arrayBuffer());
             const byteFormat = ArchiveManager.detectFormatFromBytes(data);
+
+            // Show password input for encrypted ZIPs
             if (byteFormat === 'zip' && ArchiveManager.isZipEncrypted(data)) {
                 encryptedNotice.style.display = 'block';
             }
@@ -356,6 +488,16 @@ function setupEventListeners(container: HTMLElement) {
             progressFill.style.width = '60%';
             currentEntries = await ArchiveManager.listEntries(file);
             progressFill.style.width = '100%';
+
+            // Show password input for 7z when listing returns empty or all-zero sizes
+            // (indicates encrypted headers — 7z-wasm couldn't list without password)
+            if (byteFormat === '7z') {
+                const hasContent = currentEntries.length > 0 && currentEntries.some(e => e.size > 0 || e.isDirectory);
+                if (!hasContent) {
+                    encryptedNotice.style.display = 'block';
+                    unlockBtn.style.display = '';
+                }
+            }
 
             renderDecompressEntries();
 
@@ -378,7 +520,6 @@ function setupEventListeners(container: HTMLElement) {
         dropZone.classList.add('has-file');
         compressMode.style.display = 'block';
         decompressMode.style.display = 'none';
-        uploadActions.style.display = 'flex';
         encryptedNotice.style.display = 'none';
 
         await addFilesToCompress(files);
@@ -452,15 +593,23 @@ function setupEventListeners(container: HTMLElement) {
 
             progressFill.style.width = '60%';
 
-            const blob = await ArchiveManager.createArchive(compressFiles, {
+            const password = passwordInput.value.trim() || undefined;
+            // Clone file data so the original Uint8Arrays remain valid for subsequent creations
+            const fileCopies = compressFiles.map(f => ({ name: f.name, data: new Uint8Array(f.data) }));
+            const blob = await ArchiveManager.createArchive(fileCopies, {
                 format,
                 compressionLevel: level,
+                password,
             });
 
             progressFill.style.width = '100%';
 
             // Generate filename
-            const ext = format === 'tar.gz' ? '.tar.gz' : `.${format}`;
+            const extMap: Record<string, string> = {
+                'zip': '.zip', 'tar': '.tar', 'tar.gz': '.tar.gz',
+                'tar.bz2': '.tar.bz2', 'tar.xz': '.tar.xz', '7z': '.7z',
+            };
+            const ext = extMap[format] || `.${format}`;
             const archiveName = `archive${ext}`;
 
             // Download
@@ -527,7 +676,8 @@ function setupEventListeners(container: HTMLElement) {
                 target.disabled = true;
                 target.textContent = 'Extracting...';
                 try {
-                    const extracted = await ArchiveManager.extractFile(currentArchiveFile, entryName);
+                    const decryptPw = decryptPasswordInput.value.trim() || undefined;
+                    const extracted = await ArchiveManager.extractFile(currentArchiveFile, entryName, decryptPw);
                     downloadFile(extracted);
                 } catch (err: unknown) {
                     const message = err instanceof Error ? err.message : String(err);
@@ -549,7 +699,8 @@ function setupEventListeners(container: HTMLElement) {
         progressFill.style.width = '0%';
 
         try {
-            const files = await ArchiveManager.extractAll(currentArchiveFile);
+            const decryptPw = decryptPasswordInput.value.trim() || undefined;
+            const files = await ArchiveManager.extractAll(currentArchiveFile, decryptPw);
             progressFill.style.width = '80%';
 
             if (files.length === 1) {

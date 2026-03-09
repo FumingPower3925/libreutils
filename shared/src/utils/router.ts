@@ -8,7 +8,7 @@ export interface Route {
 interface RouterOptions {
     routes: Route[];
     container: HTMLElement;
-    notFound?: () => HTMLElement;
+    notFound?: () => HTMLElement | Promise<HTMLElement>;
 }
 
 interface Router {
@@ -48,7 +48,8 @@ export function createRouter(options: RouterOptions): Router {
                 container.appendChild(element);
             } else if (notFound) {
                 document.title = 'Not Found | LibreUtils';
-                container.appendChild(notFound());
+                const el = await notFound();
+                container.appendChild(el);
             } else {
                 container.innerHTML = '<h1>Page not found</h1>';
             }

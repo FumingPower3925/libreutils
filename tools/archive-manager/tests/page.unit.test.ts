@@ -48,19 +48,14 @@ describe('Archive Manager Page', () => {
         expect(compressMode.style.display).toBe('none');
     });
 
-    it('should have upload actions initially hidden', () => {
-        const container = renderArchiveManagerPage();
-        const uploadActions = container.querySelector('#upload-actions') as HTMLElement;
-        expect(uploadActions).toBeTruthy();
-        expect(uploadActions.style.display).toBe('none');
-    });
-
-    it('should contain format selector with ZIP, TAR, TAR.GZ options', () => {
+    it('should contain format selector with 7 format options (RAR disabled)', () => {
         const container = renderArchiveManagerPage();
         const formatSelect = container.querySelector('#archive-format') as HTMLSelectElement;
         expect(formatSelect).toBeTruthy();
         const options = Array.from(formatSelect.options).map(o => o.value);
-        expect(options).toEqual(['zip', 'tar', 'tar.gz']);
+        expect(options).toEqual(['zip', 'tar', 'tar.gz', 'tar.bz2', 'tar.xz', '7z', 'rar']);
+        const rarOption = formatSelect.querySelector('option[value="rar"]') as HTMLOptionElement;
+        expect(rarOption.disabled).toBe(true);
     });
 
     it('should contain compression level slider', () => {
@@ -78,13 +73,27 @@ describe('Archive Manager Page', () => {
         expect(createBtn).toBeTruthy();
     });
 
-    it('should contain folder upload button and input', () => {
+    it('should contain masked password input with eye toggle', () => {
         const container = renderArchiveManagerPage();
-        const folderBtn = container.querySelector('#folder-upload-btn');
-        expect(folderBtn).toBeTruthy();
-        const folderInput = container.querySelector('#folder-input') as HTMLInputElement;
-        expect(folderInput).toBeTruthy();
-        expect(folderInput.hasAttribute('webkitdirectory')).toBe(true);
+        const passwordInput = container.querySelector('#archive-password') as HTMLInputElement;
+        expect(passwordInput).toBeTruthy();
+        expect(passwordInput.type).toBe('password');
+        const eyeToggle = container.querySelector('#password-eye') as HTMLButtonElement;
+        expect(eyeToggle).toBeTruthy();
+    });
+
+    it('should contain password hint (initially hidden)', () => {
+        const container = renderArchiveManagerPage();
+        const hint = container.querySelector('#password-hint') as HTMLElement;
+        expect(hint).toBeTruthy();
+        expect(hint.style.display).toBe('none');
+    });
+
+    it('should contain decrypt password input in decompress mode', () => {
+        const container = renderArchiveManagerPage();
+        const decryptInput = container.querySelector('#decrypt-password') as HTMLInputElement;
+        expect(decryptInput).toBeTruthy();
+        expect(decryptInput.type).toBe('password');
     });
 
     it('should contain encrypted archive notice (hidden)', () => {
