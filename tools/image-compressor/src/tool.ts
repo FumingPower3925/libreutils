@@ -1,8 +1,28 @@
+import { encodeBMP, encodeTIFF, encodeGIF, canvasSupportsFormat } from './encoders';
+
+export type OutputFormat =
+    | 'image/jpeg'
+    | 'image/webp'
+    | 'image/png'
+    | 'image/avif'
+    | 'image/gif'
+    | 'image/bmp'
+    | 'image/tiff';
+
+export interface CropRegion {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
 export interface CompressionOptions {
     quality: number;        // 0.0 to 1.0
     maxWidth?: number;      // Max output width (maintains aspect ratio)
     maxHeight?: number;     // Max output height (maintains aspect ratio)
-    outputFormat: 'image/jpeg' | 'image/webp' | 'image/png';
+    outputFormat: OutputFormat;
+    crop?: CropRegion;
+    lossless?: boolean;
 }
 
 export interface CompressionResult {
@@ -17,12 +37,10 @@ export interface CompressionResult {
     dataUrl: string;
 }
 
+/** Formats that use custom encoders instead of canvas.toBlob() */
+const CUSTOM_FORMATS = new Set<string>(['image/bmp', 'image/tiff', 'image/gif']);
+
 export class ImageCompressor {
-    /**
-     * Checks whether a real browser Canvas API is available.
-     * happy-dom and other test DOM shims don't implement canvas,
-     * so we verify getContext('2d') actually returns a context.
-     */
     private static hasCanvasSupport(): boolean {
         if (typeof document === 'undefined') return false;
         try {
@@ -33,10 +51,6 @@ export class ImageCompressor {
         }
     }
 
-    /**
-     * Loads an image file and returns an HTMLImageElement.
-     * Works only in browser environments with Canvas support.
-     */
     static loadImage(file: File): Promise<HTMLImageElement> {
         return new Promise((resolve, reject) => {
             if (!this.hasCanvasSupport()) {
@@ -61,9 +75,6 @@ export class ImageCompressor {
         });
     }
 
-    /**
-     * Compresses an image using the Canvas API.
-     */
     static async compress(file: File, options: CompressionOptions): Promise<CompressionResult> {
         if (!this.hasCanvasSupport()) {
             throw new Error('compress requires a browser environment with Canvas API support');
@@ -71,13 +82,20 @@ export class ImageCompressor {
 
         const img = await this.loadImage(file);
 
-        // Calculate output dimensions
+        // Determine source region (crop or full image)
+        const crop = options.crop;
+        const srcX = crop ? crop.x : 0;
+        const srcY = crop ? crop.y : 0;
+        const srcW = crop ? crop.width : img.naturalWidth;
+        const srcH = crop ? crop.height : img.naturalHeight;
+
+        // Calculate output dimensions from cropped source
         const { width, height } = this.calculateDimensions(
-            img.naturalWidth, img.naturalHeight,
+            srcW, srcH,
             options.maxWidth, options.maxHeight
         );
 
-        // Create canvas and draw
+        // Create canvas and draw (with crop if specified)
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
@@ -85,18 +103,28 @@ export class ImageCompressor {
         if (!ctx) {
             throw new Error('Failed to get canvas 2D context');
         }
-        ctx.drawImage(img, 0, 0, width, height);
+        ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, width, height);
 
-        // Convert to blob
-        const blob = await new Promise<Blob>((resolve, reject) => {
-            canvas.toBlob(
-                (b) => b ? resolve(b) : reject(new Error('Failed to compress image')),
-                options.outputFormat,
-                options.quality
-            );
-        });
+        // Encode to output format
+        let blob: Blob;
+        let dataUrl: string;
 
-        const dataUrl = canvas.toDataURL(options.outputFormat, options.quality);
+        if (CUSTOM_FORMATS.has(options.outputFormat)) {
+            blob = this.encodeCustomFormat(canvas, options.outputFormat, options.quality);
+            dataUrl = await this.blobToDataUrl(blob);
+        } else {
+            // For lossless WebP/AVIF, use quality 1.0
+            const effectiveQuality = options.lossless ? 1.0 : options.quality;
+            // Native canvas formats (JPEG, PNG, WebP, AVIF)
+            blob = await new Promise<Blob>((resolve, reject) => {
+                canvas.toBlob(
+                    (b) => b ? resolve(b) : reject(new Error('Failed to compress image')),
+                    options.outputFormat,
+                    effectiveQuality
+                );
+            });
+            dataUrl = canvas.toDataURL(options.outputFormat, effectiveQuality);
+        }
 
         return {
             originalSize: file.size,
@@ -111,11 +139,6 @@ export class ImageCompressor {
         };
     }
 
-    /**
-     * Calculates output dimensions maintaining aspect ratio.
-     * If both maxWidth and maxHeight are provided, the image is scaled
-     * to fit within those bounds while preserving aspect ratio.
-     */
     static calculateDimensions(
         srcWidth: number, srcHeight: number,
         maxWidth?: number, maxHeight?: number
@@ -130,7 +153,6 @@ export class ImageCompressor {
         const aspectRatio = srcWidth / srcHeight;
 
         if (maxWidth && maxHeight) {
-            // Fit within both constraints
             if (width > maxWidth) {
                 width = maxWidth;
                 height = Math.round(width / aspectRatio);
@@ -155,15 +177,21 @@ export class ImageCompressor {
     }
 
     /**
-     * Returns supported output formats.
+     * Returns all supported output formats.
+     * Native canvas formats are always listed; AVIF is feature-detected.
      */
-    static getSupportedFormats(): string[] {
-        return ['image/jpeg', 'image/webp', 'image/png'];
+    static getSupportedFormats(): OutputFormat[] {
+        const formats: OutputFormat[] = [
+            'image/jpeg', 'image/webp', 'image/png',
+            'image/gif', 'image/bmp', 'image/tiff',
+        ];
+        // AVIF: only include if the browser's canvas supports it
+        if (typeof document !== 'undefined' && canvasSupportsFormat('image/avif')) {
+            formats.splice(3, 0, 'image/avif'); // insert after PNG
+        }
+        return formats;
     }
 
-    /**
-     * Formats file size for display.
-     */
     static formatFileSize(bytes: number): string {
         if (bytes === 0) return '0 B';
         const units = ['B', 'KB', 'MB', 'GB'];
@@ -172,5 +200,25 @@ export class ImageCompressor {
         const index = Math.min(i, units.length - 1);
         const value = bytes / Math.pow(k, index);
         return `${value.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+    }
+
+    // ─── Private Helpers ─────────────────────────────────────────
+
+    private static encodeCustomFormat(canvas: HTMLCanvasElement, format: string, quality?: number): Blob {
+        switch (format) {
+            case 'image/bmp':  return encodeBMP(canvas);
+            case 'image/tiff': return encodeTIFF(canvas, true);
+            case 'image/gif':  return encodeGIF(canvas, quality);
+            default: throw new Error(`Unsupported custom format: ${format}`);
+        }
+    }
+
+    private static blobToDataUrl(blob: Blob): Promise<string> {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(new Error('Failed to read blob'));
+            reader.readAsDataURL(blob);
+        });
     }
 }
