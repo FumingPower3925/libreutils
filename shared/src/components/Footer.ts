@@ -82,16 +82,18 @@ export class LuFooter extends HTMLElement {
           align-items: center;
           gap: var(--lu-space-2, 0.5rem);
           padding: var(--lu-space-2, 0.5rem) var(--lu-space-3, 0.75rem);
-          background: var(--lu-success-light, #dcfce7);
-          color: var(--lu-success, #22c55e);
+          background: var(--lu-success-light, #e8f5e9);
+          color: var(--lu-success, #2e7d32);
           font-size: var(--lu-text-xs, 0.75rem);
           font-weight: 500;
           border-radius: var(--lu-radius-full, 9999px);
           margin-top: var(--lu-space-4, 1rem);
+          user-select: none;
         }
         @media (prefers-color-scheme: dark) {
           .privacy-badge {
-            background: rgba(34, 197, 94, 0.15);
+            background: rgba(46, 125, 50, 0.2);
+            color: #6ee775;
           }
         }
         .privacy-badge svg {

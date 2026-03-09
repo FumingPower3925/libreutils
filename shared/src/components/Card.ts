@@ -77,17 +77,11 @@ export class LuCard extends HTMLElement {
         .card-category {
           font-size: var(--lu-text-xs, 0.75rem);
           font-weight: 500;
-          color: var(--lu-primary-600, #7c3aed);
-          background: var(--lu-primary-50, #f5f3ff);
+          color: var(--lu-card-category-color, var(--lu-primary-600, #7c3aed));
+          background: var(--lu-card-category-bg, var(--lu-primary-50, #f5f3ff));
           padding: 0.125rem 0.5rem;
           border-radius: var(--lu-radius-full, 9999px);
           text-transform: capitalize;
-        }
-        @media (prefers-color-scheme: dark) {
-          .card-category {
-            background: var(--lu-primary-900, #4c1d95);
-            color: var(--lu-primary-200, #ddd6fe);
-          }
         }
         .card-description {
           font-size: var(--lu-text-sm, 0.875rem);

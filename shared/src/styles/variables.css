@@ -117,6 +117,10 @@
     --lu-success-light: rgba(46, 125, 50, 0.15);
     --lu-error-light: rgba(198, 40, 40, 0.15);
     --lu-lavender-light: rgba(182, 190, 224, 0.15);
+    --lu-card-category-bg: rgba(154, 123, 192, 0.2);
+    --lu-card-category-color: #d4bfee;
+    --lu-warning-light: rgba(146, 64, 14, 0.15);
+    --lu-warning: #fbbf24;
 }
 
 /* Also support system preference as fallback */
@@ -134,5 +138,9 @@
         --lu-success-light: rgba(46, 125, 50, 0.15);
         --lu-error-light: rgba(198, 40, 40, 0.15);
         --lu-lavender-light: rgba(182, 190, 224, 0.15);
+        --lu-card-category-bg: rgba(154, 123, 192, 0.2);
+        --lu-card-category-color: #d4bfee;
+        --lu-warning-light: rgba(146, 64, 14, 0.15);
+        --lu-warning: #fbbf24;
     }
 }
